@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import Dictionary.ConfigFile;
-import Dictionary.Program;
+import Dictionary.Common;
 
 public class Translation {
     public final int ukr_id;
@@ -61,7 +61,7 @@ public class Translation {
         //if score have updated today - return
         var user = new ConfigFile("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt");
         var lastTrainingDate = user.params.get("last_training");
-        if(Program.isToday(lastTrainingDate)) return;
+        if(Common.isToday(lastTrainingDate)) return;
 
         List<Translation> translations = loadTranslations(stmt);
         var today = Calendar.getInstance();

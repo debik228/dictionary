@@ -6,6 +6,7 @@ import Dictionary.Entities.Word;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 
 public class Common {
@@ -60,5 +61,16 @@ public class Common {
         }
         queryRes.close();
         return res;
+    }
+
+
+    public static boolean isToday(String dateStr){
+        var lastTrainingDate = dateStr.split("-");
+        var today = Calendar.getInstance();
+        if(Integer.toString(today.get(Calendar.DAY_OF_MONTH)).equals(lastTrainingDate[0])
+                && Integer.toString(today.get(Calendar.MONTH)).equals(lastTrainingDate[1])
+                && Integer.toString(today.get(Calendar.YEAR)).equals(lastTrainingDate[2]))
+            return true;
+        return false;
     }
 }
