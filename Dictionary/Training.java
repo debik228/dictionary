@@ -159,13 +159,20 @@ public class Training {
 
     public static String modifyString(String str, Difficulty difficulty){
         var res = str;
+        var sb = new StringBuilder();
         switch (difficulty) {
             case Hard:
+                var tmp = str.split("\\W+");
+                for(var elem : tmp){
+                    sb.append(elem);
+                    sb.append("\\W*");
+                }
+                res = sb.toString();
+                sb.setLength(0);//reset sb
                 break;
             case Easy:
                 str = str.replaceAll("[ck]", "[ck]");
             case Medium:
-                var sb = new StringBuilder();
                 for (var ch : str.toCharArray()) {
                     sb.append(ch);
                     sb.append('*');

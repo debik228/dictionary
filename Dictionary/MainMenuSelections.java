@@ -13,7 +13,6 @@ public enum MainMenuSelections {
     AddWords("Add words to dictionary"){
         public void action(Statement stat) throws Exception{
             var in = new BufferedReader(new InputStreamReader(System.in));
-            var conn = stat.getConnection();
             var str = "";
             System.out.println("write translations in next format:\nбаняк, кастрюля = pot, pan\nPrint exit to leave");
             while (!str.matches("stop|exit")) {
@@ -26,7 +25,7 @@ public enum MainMenuSelections {
                     for(int i = 0; i < ukr.length; i++) ukr[i] = ukr[i].replaceAll("'", "''");
                     for(int i = 0; i < eng.length; i++) eng[i] = eng[i].replaceAll("'", "''");
 
-                    Update.addWords(conn, ukr, eng);
+                    Update.addWords(stat, ukr, eng);
                 }
             }
         }

@@ -5,8 +5,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class Update {
-    public static void addWords(Connection conn, String[] ukr, String[] eng) throws SQLException{
-        var statement = conn.createStatement();
+    public static void addWords(Statement statement, String[] ukr, String[] eng) throws SQLException{
         var query = new StringBuilder("BEGIN;\nINSERT INTO ukr_words (word) VALUES ");
 
         //first query(ukr_words)
@@ -44,7 +43,5 @@ public class Update {
         //executing last query
         System.out.println(query);
         statement.executeUpdate(query.toString());
-
-        statement.close();
     }
 }
