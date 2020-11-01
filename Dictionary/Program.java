@@ -22,10 +22,10 @@ public class Program {
                 System.out.println("\nSelect what do you want to do:");
                 var mainMenuSelections = MainMenuSelections.class.getEnumConstants();
                 for (int i = 1; i <= mainMenuSelections.length; i++)
-                    System.out.printf("%d. %s", i ,mainMenuSelections[i - 1].name);
+                    System.out.printf("%d. %s\n", i ,mainMenuSelections[i - 1].name);
 
                 int selection = -49 + in.readLine().charAt(0);
-                if (selection > -1 && selection <= mainMenuSelections.length)
+                if (selection > -1 && selection < mainMenuSelections.length)
                     mainMenuSelections[selection].action(stat);
             } while (!conn.isClosed());
         }
