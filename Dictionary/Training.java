@@ -33,7 +33,7 @@ public class Training {
         //the training
         List<Translation> inp = null, res = null;
         try {
-            inp = Translation.loadTranslations(stmt, "score < 5");
+            inp = Translation.loadTranslations(stmt, "score < (SELECT avg(score) FROM dictionary) + 1");
 
             res = trainingStatement(stmt, false, 5, inp, Hard);
             if (res.size() > 0) res = trainingStatement(stmt, false, 2, res, Medium);
@@ -66,11 +66,12 @@ public class Training {
         System.out.println(difficulty.name());
         //END DEBUG
 
-        var nextTour = new LinkedList<Translation>();
+        var rand = new Random();
         Translation currTrans = null;
+        var nextTour = new LinkedList<Translation>();
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-        do {
-            currTrans = translations.get(0);
+        while(translations.size() != 0){
+            currTrans = translations.get(rand.nextInt(translations.size()));
             System.out.println("Як перекладаєцця на англійську " + ukrWords.get(currTrans.ukr_id).word);
             var response = new HashSet<String>();
             Collections.addAll(response, in.readLine().toLowerCase().split(", *"));
@@ -85,7 +86,7 @@ public class Training {
 
             for(var trans : rightResponses)
                 if(trans.last_upd.get(Calendar.DAY_OF_YEAR) != Calendar.getInstance().get(Calendar.DAY_OF_YEAR)         //if didn`t train
-                        || trans.last_upd.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR))                      //today
+                        || trans.last_upd.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR))              //today
                     trans.addScore(award);
                 else
                     trans.addScore(1);
@@ -93,7 +94,7 @@ public class Training {
             translations.removeAll(rightResponses);
 
             if(rightResponses.size() == 0){
-                translations.remove(0);
+                translations.remove(currTrans);
                 nextTour.add(currTrans);
                 System.out.print("Неправильно!\nМожна перекласти як: ");
                 for(var trans : translationVariants)
@@ -115,18 +116,17 @@ public class Training {
                 }
                 if(nonUsedTranslations.size() > 0) { //There is non used eng translation of this word
                     System.out.print("Також можна перекласти як: ");
-                    for(int i = 0; i < nonUsedTranslations.size(); i++) { //Remove all the non used translation
+                    for(int i = 0; i < nonUsedTranslations.size(); i++) {
                         var tmpTrans = nonUsedTranslations.get(i);
-                        translations.removeAll(nonUsedTranslations);
                         System.out.print(engWords.get(tmpTrans.eng_id).word + ' ');
                     }
                 }
-
             }
+            translations.removeAll(nonUsedTranslations);                                                                //we've show all the variants, so we shouldn't give a chance to give a right response in this tour
             Translation.saveTranslations(stmt, rightResponses);
             System.out.println();
             if(translations.size() == 0 && looped) translations = nextTour;
-        }while(translations.size() != 0);
+        }
         return nextTour;
     }
 
