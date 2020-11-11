@@ -35,9 +35,10 @@ public class Training {
         try {
             inp = Translation.loadTranslations(stmt, "score < (SELECT avg(score) FROM dictionary) + 1");
 
-            res = trainingStatement(stmt, false, 5, inp, Hard);
-            if (res.size() > 0) res = trainingStatement(stmt, false, 2, res, Medium);
-            if (res.size() > 0) trainingStatement(stmt, true, 1, res, Easy);
+            res = trainingStatement(stmt, 5, inp, Hard);
+            if (res.size() > 0) res = trainingStatement(stmt, 2, res, Medium);
+            while(res.size() > 0)
+                res = trainingStatement(stmt, 1, res, Easy);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -60,24 +61,49 @@ public class Training {
         }
     }
 
-    public static List<Translation> trainingStatement(Statement stmt, boolean looped, int award, List<Translation> translations, Difficulty difficulty)throws SQLException, IOException{
-
-        //DEBUG
+    public static List<Translation> trainingStatement(Statement stmt, int award, List<Translation> translations, Difficulty difficulty)throws SQLException, IOException{
         System.out.println(difficulty.name());
-        //END DEBUG
+        var nextTour = new LinkedList<Translation>();
 
         var rand = new Random();
+        var ukrToEng = new LinkedList<Translation>();
+        var engToUkr = new LinkedList<Translation>();
+        int initTranslationsSize = translations.size();
+        for(int i = 0; i < initTranslationsSize; i++){
+            var curr = translations.get(rand.nextInt(translations.size()));
+            translations.remove(curr);
+            if(rand.nextBoolean())  ukrToEng.add(curr);
+            else                    engToUkr.add(curr);
+        }
+
+        if(engToUkr.size() > 0) nextTour.addAll(
+                trainingHalfStatement(stmt, award, engToUkr, difficulty, Tables.eng_words));
+
+        if(ukrToEng.size() > 0) nextTour.addAll(
+                trainingHalfStatement(stmt, award, ukrToEng, difficulty, Tables.ukr_words));
+        //if(engToUkr.size() > 0) nextTour.addAll(
+        //        trainingHalfStatement(stmt, award, engToUkr, difficulty, Tables.eng_words));
+        return nextTour;
+    }
+
+    public static List<Translation> trainingHalfStatement(Statement stmt, int award, List<Translation> translations, Difficulty difficulty, Tables from)throws SQLException, IOException{
+        var source = from == Tables.eng_words ? engWords:ukrWords;
+        var scope  = from == Tables.eng_words ? ukrWords:engWords;
+
         Translation currTrans = null;
         var nextTour = new LinkedList<Translation>();
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         while(translations.size() != 0){
-            currTrans = translations.get(rand.nextInt(translations.size()));
-            System.out.println("Як перекладаєцця на англійську " + ukrWords.get(currTrans.ukr_id).word);
+            currTrans = translations.get(0);
+            int loadedWordId = from == Tables.ukr_words ? currTrans.ukr_id:currTrans.eng_id;
+            System.out.println("Як перекладаєцця на англійську " + source.get(loadedWordId).word);
+            //System.out.println("Як перекладаєцця на англійську " + source.get(currTrans.ukr_id).word);
             var response = new HashSet<String>();
             Collections.addAll(response, in.readLine().toLowerCase().split(", *"));
-            var translationVariants = Translation.loadTranslations(stmt, "ukr_id = " + currTrans.ukr_id);
+            var translationVariants = from == Tables.ukr_words ? Translation.loadTranslations(stmt, "ukr_id = " + loadedWordId) : Translation.loadTranslations(stmt, "eng_id = " + loadedWordId);
+            //var translationVariants = Translation.loadTranslations(stmt, "ukr_id = " + currTrans.ukr_id);
 
-            var checkingResult = checkResponse(response, translationVariants, difficulty);
+            var checkingResult = checkResponse(response, translationVariants, difficulty, from);
             LinkedList<Translation>  rightResponses       = checkingResult.rightResponses;
             LinkedList<String>       wrongResponses       = checkingResult.wrongResponses;
             LinkedList<Translation>  nonUsedTranslations  = checkingResult.nonUsedTranslations;
@@ -98,7 +124,8 @@ public class Training {
                 nextTour.add(currTrans);
                 System.out.print("Неправильно!\nМожна перекласти як: ");
                 for(var trans : translationVariants)
-                    System.out.print(engWords.get(trans.eng_id).word + ", ");
+                    if(from == Tables.ukr_words)    System.out.print(scope.get(trans.eng_id).word + ", ");
+                    else                            System.out.print(scope.get(trans.ukr_id).word + ", ");
             }
             else{
                 System.out.print("Правильно!");
@@ -118,19 +145,19 @@ public class Training {
                     System.out.print("Також можна перекласти як: ");
                     for(int i = 0; i < nonUsedTranslations.size(); i++) {
                         var tmpTrans = nonUsedTranslations.get(i);
-                        System.out.print(engWords.get(tmpTrans.eng_id).word + ' ');
+                        if(from == Tables.ukr_words)    System.out.print(scope.get(tmpTrans.eng_id).word + ' ');
+                        else                            System.out.print(scope.get(tmpTrans.ukr_id).word + ' ');
                     }
                 }
             }
             translations.removeAll(nonUsedTranslations);                                                                //we've show all the variants, so we shouldn't give a chance to give a right response in this tour
             Translation.saveTranslations(stmt, rightResponses);
             System.out.println();
-            if(translations.size() == 0 && looped) translations = nextTour;
         }
         return nextTour;
     }
 
-    public static checkingResult checkResponse(HashSet<String> responses, List<Translation> translationsVariants, Difficulty difficulty){
+    public static checkingResult checkResponse(HashSet<String> responses, List<Translation> translationsVariants, Difficulty difficulty, Tables from){
         var rightResponses = new LinkedList<Translation>();
         var wrongResponses = new LinkedList<String>();
         var nonUsedTranslations = new LinkedList<>(translationsVariants);
@@ -140,14 +167,15 @@ public class Training {
             var wrong = true;
             for(int i = 0; i < translationsVariants.size(); i++) {
                 var currTrans = translationsVariants.get(i);
-                String checkedEngWord = engWords.get(currTrans.eng_id).word.toLowerCase();
+                String checkedScopeWord = from == Tables.ukr_words ? engWords.get(currTrans.eng_id).word.toLowerCase() : ukrWords.get(currTrans.ukr_id).word.toLowerCase();
+                //String checkedScopeWord = scope.get(currTrans.eng_id).word.toLowerCase();
                 String modified = modifyString(response, difficulty);
-                if(checkedEngWord.matches(modified)){
+                if(checkedScopeWord.matches(modified)){
                     rightResponses.add(currTrans);
                     nonUsedTranslations.remove(currTrans);
                     wrong = false;
-                    if(!checkedEngWord.equals(response))//typo
-                        typos.put(response, checkedEngWord);
+                    if(!checkedScopeWord.equals(response))//typo
+                        typos.put(response, checkedScopeWord);
                     break;
                 }
             }
@@ -162,10 +190,10 @@ public class Training {
         var sb = new StringBuilder();
         switch (difficulty) {
             case Hard:
-                var tmp = str.split("\\W+");
+                var tmp = str.split("[^а-яА-Я^\\w]");
                 for(var elem : tmp){
                     sb.append(elem);
-                    sb.append("\\W*");
+                    sb.append("[^а-яА-Я^\\w]*");
                 }
                 res = sb.toString();
                 sb.setLength(0);//reset sb
