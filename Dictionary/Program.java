@@ -3,10 +3,12 @@ package Dictionary;
 import Dictionary.Entities.Translation;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 
 public class Program {
     public static void main(String[] args) throws Exception{
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         Connection conn = null;
         try {
             conn = Common.getConn();
