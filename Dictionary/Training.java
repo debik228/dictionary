@@ -4,6 +4,7 @@ import Dictionary.Entities.Translation;
 import Dictionary.Entities.Word;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -34,7 +35,7 @@ public class Training {
         //the training
         List<Translation> inp = null, res = null;
         try {
-            inp = Translation.loadTranslations(stmt, "score < (SELECT avg(score) FROM dictionary)");
+            inp = Translation.loadTranslations(stmt, "score <= (SELECT avg(score) FROM dictionary)");
 
             res = trainingStatement(stmt, 5, inp, Hard);
             if (res.size() > 0) res = trainingStatement(stmt, 2, res, Medium);
@@ -93,13 +94,13 @@ public class Training {
 
         Translation currTrans = null;
         var nextTour = new LinkedList<Translation>();
-        BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+        Scanner in = new Scanner(System.in, StandardCharsets.UTF_8);
         while(translations.size() != 0){
             currTrans = translations.get(0);
             int loadedWordId = from == Tables.ukr_words ? currTrans.ukr_id:currTrans.eng_id;
-            System.out.println("\u001B[37m" + "Як перекладаєцця на англійську " + source.get(loadedWordId).word + "\u001B[0m");
+            System.out.println("\u001B[37m" + "Як перекладаєцця " + source.get(loadedWordId).word + "\u001B[0m");
             var response = new HashSet<String>();
-            Collections.addAll(response, in.readLine().toLowerCase().split(", *"));
+            Collections.addAll(response, in.nextLine().toLowerCase().split(", *"));
             var translationVariants = from == Tables.ukr_words ? Translation.loadTranslations(stmt, "ukr_id = " + loadedWordId) : Translation.loadTranslations(stmt, "eng_id = " + loadedWordId);
 
             var checkingResult = checkResponse(response, translationVariants, difficulty, from);

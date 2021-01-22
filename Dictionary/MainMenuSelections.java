@@ -2,7 +2,9 @@ package Dictionary;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.Statement;
+import java.util.Scanner;
 
 public enum MainMenuSelections {
     StartTraining("Start training"){
@@ -12,11 +14,11 @@ public enum MainMenuSelections {
     },
     AddWords("Add words to dictionary"){
         public void action(Statement stat) throws Exception{
-            var in = new BufferedReader(new InputStreamReader(System.in));
+            var in = new Scanner(System.in, StandardCharsets.UTF_8);
             var str = "";
             System.out.println("write translations in next format:\nбаняк, кастрюля = pot, pan\nPrint exit to leave");
             while (!str.matches("stop|exit")) {
-                str = in.readLine();
+                str = in.nextLine();
                 if (str.matches("[^=]+=[^=]+")) {
                     var wordRoster = str.split(" *= *");
                     var ukr = wordRoster[0].split(", *");
