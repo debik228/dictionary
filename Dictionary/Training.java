@@ -193,13 +193,16 @@ public class Training {
 
         switch (difficulty) {
             case Easy:
-                res = res.replaceAll("[ck]", "[ck]");
+                //res = res.replaceAll("[ck]", "[ck]");
             case Medium:
                 sb.setLength(0);//reset sb
 
                 //allow any word-character duplication
+                Character prevChar = null;
                 for (var ch : res.toCharArray()) {
+                    if(prevChar != null && prevChar == ch)continue;
                     sb.append(ch);
+                    prevChar = ch;
                     if((ch >= 'a' && ch <= 'z') ||    //a-z
                        (ch >= 'A' && ch <= 'Z') ||    //A-Z
                        (ch >= 'а' && ch <= 'я') ||    //а-я
