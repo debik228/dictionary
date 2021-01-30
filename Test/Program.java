@@ -13,7 +13,7 @@ public class Program {
         var conn = DriverManager.getConnection("jdbc:postgresql:test", "postgres", "123456789");
         var stat = conn.createStatement();
 
-        //Translation.updScoresToDate(stat);            //Don't update score automatically debug database
+        //Translation.updScoresToDate(stat);            //Don't update score automatically in debug database
 
         //dialog
         System.out.println("Hi there!\nYour last training was on " + ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_training"));

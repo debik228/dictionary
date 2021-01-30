@@ -83,12 +83,12 @@ public class Training {
 
         if(ukrToEng.size() > 0) nextTour.addAll(
                 trainingHalfStatement(stmt, award, ukrToEng, difficulty, Tables.ukr_words));
-        //if(engToUkr.size() > 0) nextTour.addAll(
-        //        trainingHalfStatement(stmt, award, engToUkr, difficulty, Tables.eng_words));
         return nextTour;
     }
 
     public static List<Translation> trainingHalfStatement(Statement stmt, int award, List<Translation> translations, Difficulty difficulty, Tables from)throws SQLException, IOException{
+        int questionsTot = translations.size(),
+            questionsNum = 1;
         var source = from == Tables.eng_words ? engWords:ukrWords;
         var scope  = from == Tables.eng_words ? ukrWords:engWords;
 
@@ -98,7 +98,7 @@ public class Training {
         while(translations.size() != 0){
             currTrans = translations.get(0);
             int loadedWordId = from == Tables.ukr_words ? currTrans.ukr_id:currTrans.eng_id;
-            System.out.println("\u001B[37m" + "Як перекладаєцця " + source.get(loadedWordId).word + "\u001B[0m");
+            System.out.println("\u001B[37m" + questionsNum + "/" + questionsTot + " Як перекладаєцця " + source.get(loadedWordId).word + "\u001B[0m");
             var response = new HashSet<String>();
             Collections.addAll(response, in.nextLine().toLowerCase().split(", *"));
             var translationVariants = from == Tables.ukr_words ? Translation.loadTranslations(stmt, "ukr_id = " + loadedWordId) : Translation.loadTranslations(stmt, "eng_id = " + loadedWordId);
@@ -156,6 +156,7 @@ public class Training {
             translations.removeAll(nonUsedTranslations);                                                                //we've show all the variants, so we shouldn't give a chance to give a right response in this tour
             Translation.saveTranslations(stmt, rightResponses);
             System.out.println();
+            questionsNum++;
         }
         return nextTour;
     }
@@ -212,6 +213,10 @@ public class Training {
                 }
                 res = sb.toString();
             case Hard:
+                //unnecessary 'to' before verbs
+                //if(!str.startsWith("to "))
+                //    res = "(to)? " + res;
+
                 //sameness of endings -сь , -ся e.g. розпадатись = розпадатися
                 sb.setLength(0);//reset sb
                 if(str.matches(".*с[ья]\\s*.*")){
@@ -228,8 +233,8 @@ public class Training {
 
                 //ignore some non-word-characters
                 sb.setLength(0);//reset sb
-                String regex = "[\\s.,']";                   //boundary characters, apostrophe, comma and dot. Another non-word characters don't include because it will spoil regular expressions
-                var words = res.split(regex + "+");   //previously used [^а-яА-Я^\w]
+                String regex = "[\\s.,']";                  //boundary characters, apostrophe, comma and dot. Another non-word characters don't include because it will spoil regular expressions
+                var words = res.split(regex + "+");  //previously used [^а-яА-Я^\w]
                 for(var word : words){
                     sb.append(word);
                     sb.append(regex + "*");
