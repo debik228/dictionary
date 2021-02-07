@@ -2,6 +2,7 @@ package Dictionary;
 
 import Dictionary.Entities.Translation;
 import Dictionary.Menus.MainMenuSelections;
+import Dictionary.Menus.MenuHandler;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -19,18 +20,7 @@ public class Program {
 
             //dialog
             System.out.println("Hi there!\nYour last training was on " + ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_training"));
-            var in = new BufferedReader(new InputStreamReader(System.in));
-            do {
-
-                System.out.println("\nSelect what do you want to do:");
-                var mainMenuSelections = MainMenuSelections.class.getEnumConstants();
-                for (int i = 1; i <= mainMenuSelections.length; i++)
-                    System.out.printf("%d. %s\n", i ,mainMenuSelections[i - 1].name);
-
-                int selection = -49 + in.readLine().charAt(0);
-                if (selection > -1 && selection < mainMenuSelections.length)
-                    mainMenuSelections[selection].action(stat);
-            } while (!conn.isClosed());
+            MenuHandler.handle(MainMenuSelections.class, conn);
         }
 
         catch (Exception e){

@@ -1,40 +1,26 @@
 package Dictionary.Menus;
 
 import Dictionary.Training;
-import Dictionary.Update;
 
-import java.nio.charset.StandardCharsets;
 import java.sql.Statement;
-import java.util.Scanner;
 
 public enum MainMenuSelections implements AbstractMenu{
-    StartTraining("Start training"){
-        public void action(Statement stat) throws Exception{
+    StartTraining{
+        public boolean action(Statement stat) throws Exception{
             Training.train(stat);
+            return false;
         }
+        public String toString() { return "Start training"; }
     },
-    AddWords("Update dictionary"){
-        public void action(Statement stat) throws Exception{
-            var in = new Scanner(System.in, StandardCharsets.UTF_8);
-            var str = "";
-            System.out.println("write translations in next format:\nбаняк, кастрюля = pot, pan\nPrint exit to leave");
-            while (!str.matches("stop|exit")) {
-                str = in.nextLine();
-                if (str.matches("[^=]+=[^=]+")) {
-                    var wordRoster = str.split(" *= *");
-                    var ukr = wordRoster[0].split(", *");
-                    var eng = wordRoster[1].split(", *");
-
-                    for(int i = 0; i < ukr.length; i++) ukr[i] = ukr[i].replaceAll("'", "''");
-                    for(int i = 0; i < eng.length; i++) eng[i] = eng[i].replaceAll("'", "''");
-
-                    Update.addWords(stat, ukr, eng);
-                }
-            }
+    AddWords{
+        public boolean action(Statement stat) throws Exception{
+            MenuHandler.handle(UpdateDictionary.class, stat.getConnection());
+            return false;
         }
+        public String toString() { return "Update dictionary"; }
     },
-    ShowDictionary("Show your dictionary"){
-        public void action(Statement stat) throws Exception{
+    ShowDictionary{
+        public boolean action(Statement stat) throws Exception{
             var query = "SELECT * FROM dictionary ORDER BY score ASC";
             var queryRes = stat.executeQuery(query);
 
@@ -51,14 +37,15 @@ public enum MainMenuSelections implements AbstractMenu{
                         queryRes.getDate(6));
                 System.out.println(print);
             }
+            return false;
         }
+        public String toString() { return "Show your dictionary"; }
     },
-    Quit("Quit"){
-        public void action(Statement stat) throws Exception{
+    Quit{
+        public boolean action(Statement stat) throws Exception{
             stat.getConnection().close();
+            return true;
         }
+        public String toString() { return "Quit"; }
     };
-
-    public final String name;
-    MainMenuSelections(String name){this.name = name;}
 }
