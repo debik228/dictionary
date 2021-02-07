@@ -1,10 +1,11 @@
 package Dictionary;
 
+import Dictionary.Entities.EngWord;
+import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Translation;
 import Dictionary.Entities.Word;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -171,15 +172,15 @@ public class Training {
             var wrong = true;
             for(int i = 0; i < translationsVariants.size(); i++) {
                 var currTrans = translationsVariants.get(i);
-                String checkedScopeWord = from == Tables.ukr_words ? engWords.get(currTrans.eng_id).word.toLowerCase() : ukrWords.get(currTrans.ukr_id).word.toLowerCase();
-                String modified = modifyString(response, difficulty);
-                if(checkedScopeWord.matches(modified)){
+                Word checkedScope = from == Tables.ukr_words ? engWords.get(currTrans.eng_id) : ukrWords.get(currTrans.ukr_id);
+                String modified = modifyString(response, difficulty, checkedScope);
+                if(checkedScope.word.toLowerCase().matches(modified)){
                     rightResponses.add(currTrans);
                     nonUsedTranslations.remove(currTrans);
                     wrong = false;
-                    if(!checkedScopeWord.equals(response))//typo.
-                        if(difficulty != Hard)//In fact hard difficulty level modifying strings, but don't allow typo. So typo list always empty in this level.
-                            typos.put(response, checkedScopeWord);
+                    if(!checkedScope.word.toLowerCase().equals(response))//typo.
+                        if(difficulty != Hard)//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
+                            typos.put(response, checkedScope.word.toLowerCase());
                     break;
                 }
             }
@@ -189,7 +190,7 @@ public class Training {
         return new checkingResult(rightResponses, wrongResponses, nonUsedTranslations, typos);
     }
 
-    public static String modifyString(String str, Difficulty difficulty){
+    public static String modifyString(String str, Difficulty difficulty, Word checkedScope){
         var res = str;//str is an original word. Please don't modify it.
         var sb = new StringBuilder();
 
@@ -213,10 +214,6 @@ public class Training {
                 }
                 res = sb.toString();
             case Hard:
-                //unnecessary 'to' before verbs
-                //if(!str.startsWith("to "))
-                //    res = "(to)? " + res;
-
                 //sameness of endings -сь , -ся e.g. розпадатись = розпадатися
                 sb.setLength(0);//reset sb
                 if(str.matches(".*с[ья]\\s*.*")){
@@ -240,6 +237,10 @@ public class Training {
                     sb.append(regex + "*");
                 }
                 res = sb.toString();
+
+                //unnecessary 'to' before verbs
+                if(checkedScope.getClass() == EngWord.class && checkedScope.partOfSpeech == Word.PoS.Verb)
+                    res = "(to)? " + res;
         }
         return res;
     }

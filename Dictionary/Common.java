@@ -5,7 +5,6 @@ import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Word;
 
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 
@@ -50,13 +49,14 @@ public class Common {
         if(table != Tables.eng_words && table != Tables.ukr_words) throw new IllegalArgumentException(table.toString() + " isn't a word table");
         var res = new HashMap<Integer, Word>();
         var wordClass = table == Tables.ukr_words? UkrWord.class : EngWord.class;
-        var queryRes = stmt.executeQuery("SELECT id, word, score, last_upd FROM " + table);
+        var queryRes = stmt.executeQuery("SELECT id, word, score, pos FROM " + table);
         while(queryRes.next()){
             var id = queryRes.getInt("id");
             var word = queryRes.getString("word");
             var score = queryRes.getInt("score");
+            var pos = Word.PoS.getConstant((String)queryRes.getObject("pos"));
             try {
-                res.put(id, wordClass.getConstructor(String.class, int.class).newInstance(word, score));
+                res.put(id, wordClass.getConstructor(String.class, int.class, Word.PoS.class).newInstance(word, score, pos));
             }catch (Exception e){throw new RuntimeException(e);}
         }
         queryRes.close();

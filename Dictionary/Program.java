@@ -1,6 +1,7 @@
 package Dictionary;
 
 import Dictionary.Entities.Translation;
+import Dictionary.Menus.MainMenuSelections;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

@@ -1,18 +1,19 @@
-package Dictionary;
+package Dictionary.Menus;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import Dictionary.Training;
+import Dictionary.Update;
+
 import java.nio.charset.StandardCharsets;
 import java.sql.Statement;
 import java.util.Scanner;
 
-public enum MainMenuSelections {
+public enum MainMenuSelections implements AbstractMenu{
     StartTraining("Start training"){
         public void action(Statement stat) throws Exception{
             Training.train(stat);
         }
     },
-    AddWords("Add words to dictionary"){
+    AddWords("Update dictionary"){
         public void action(Statement stat) throws Exception{
             var in = new Scanner(System.in, StandardCharsets.UTF_8);
             var str = "";
@@ -60,5 +61,4 @@ public enum MainMenuSelections {
 
     public final String name;
     MainMenuSelections(String name){this.name = name;}
-    public abstract void action(Statement stat) throws Exception;
 }

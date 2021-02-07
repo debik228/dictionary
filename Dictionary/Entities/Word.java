@@ -1,35 +1,18 @@
 package Dictionary.Entities;
 
-import Dictionary.Tables;
-import Dictionary.WordContainer;
-
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Objects;
-
 abstract public class Word {
     public final String word;
     public int score;
-    public ArrayList<Word> translations;
+    public final PoS partOfSpeech;
 
-    Word(String word, int score){
+    Word(String word, int score, PoS partOfSpeech){
         this.word = word;
         this.score = score;
+        this.partOfSpeech = partOfSpeech;
     }
 
     public String toString() {
-        var sb = new StringBuilder(word + ", " + score);
-        if(translations != null && translations.size() != 0) {
-            sb.append(", translations: ");
-            for (var trans : translations) {
-                sb.append(trans.word);
-                sb.append(", ");
-            }
-            sb.setLength(sb.length() - 2);
-        }
-        return sb.toString();
+        return word + ", " + score + ", " + partOfSpeech.name();
     }
 
     public boolean equals(Object o) {
@@ -37,5 +20,25 @@ abstract public class Word {
         if (o == null || getClass() != o.getClass()) return false;
         Word word = (Word) o;
         return this.word.equals(word.word);
+    }
+
+    public enum PoS {
+        Noun,           //іменник
+        Verb,           //дієсл
+        Adjective,      //прикм
+        Adverb,         //присл(як? де? звідки? наскільки? якою мірою?)
+        Pronoun,        //займ
+        Preposition,    //прийменник
+        Conjunction,    //сполучник
+        Interjection,   //вигук
+        Article,        //артикль
+        PhrasalVerb,    //по типу break down і т.д.
+        Idiom,          //очевидно, лол
+        Unknown;        //хз
+
+        public static PoS getConstant(String PoS){
+            try { return Word.PoS.valueOf(PoS); }
+            catch (IllegalArgumentException e){ return Unknown; }
+        }
     }
 }
