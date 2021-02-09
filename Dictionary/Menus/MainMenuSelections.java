@@ -14,7 +14,7 @@ public enum MainMenuSelections implements AbstractMenu{
     },
     AddWords{
         public boolean action(Statement stat) throws Exception{
-            MenuHandler.handle(UpdateDictionary.class, stat.getConnection());
+            MenuHandler.handle(UpdateDictionaryMenu.class, stat.getConnection());
             return false;
         }
         public String toString() { return "Update dictionary"; }

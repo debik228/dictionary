@@ -1,5 +1,8 @@
 package Dictionary.Entities;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
 abstract public class Word {
     public final String word;
     public int score;

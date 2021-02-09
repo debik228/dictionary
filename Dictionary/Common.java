@@ -45,11 +45,12 @@ public class Common {
         return queryRes.next();
     }
 
-    public static HashMap<Integer, Word> loadWordTable(Statement stmt, Tables table)throws SQLException{
+    public static HashMap<Integer, Word> loadWordTable(Statement stmt, Tables table, String Condition)throws SQLException{
         if(table != Tables.eng_words && table != Tables.ukr_words) throw new IllegalArgumentException(table.toString() + " isn't a word table");
         var res = new HashMap<Integer, Word>();
         var wordClass = table == Tables.ukr_words? UkrWord.class : EngWord.class;
-        var queryRes = stmt.executeQuery("SELECT id, word, score, pos FROM " + table);
+        var query = "SELECT id, word, score, pos FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
+        var queryRes = stmt.executeQuery(query);
         while(queryRes.next()){
             var id = queryRes.getInt("id");
             var word = queryRes.getString("word");
@@ -63,6 +64,9 @@ public class Common {
         return res;
     }
 
+    public static HashMap<Integer, Word> loadWordTable(Statement stmt, Tables table)throws SQLException{
+        return loadWordTable(stmt, table, null);
+    }
 
     public static boolean isToday(String dateStr){
         var lastTrainingDate = dateStr.split("-");

@@ -1,12 +1,14 @@
 package Dictionary.Menus;
 
+import Dictionary.Tables;
 import Dictionary.Update;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
 
-public enum UpdateDictionary implements AbstractMenu {
+public enum UpdateDictionaryMenu implements AbstractMenu {
     AddWords{
         public boolean action(Statement stat) throws Exception{
             var in = new Scanner(System.in, StandardCharsets.UTF_8);
@@ -29,8 +31,12 @@ public enum UpdateDictionary implements AbstractMenu {
         }
         public String toString() { return "Add Words"; }
     },
-    DefinePos{
-        public boolean action(Statement stat){ return false;}
+    DefinePoS {
+        public boolean action(Statement stat)throws SQLException {
+            Update.definePoS(stat, Tables.eng_words);
+            Update.definePoS(stat, Tables.ukr_words);
+            return false;
+        }
         public String toString() { return "Define part of speech"; }
     },
     Back{

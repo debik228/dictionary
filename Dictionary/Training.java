@@ -154,7 +154,7 @@ public class Training {
                     }
                 }
             }
-            translations.removeAll(nonUsedTranslations);                                                                //we've show all the variants, so we shouldn't give a chance to give a right response in this tour
+            translations.removeAll(nonUsedTranslations);//we've show all the variants, so we shouldn't give a chance to give a right response in this tour
             Translation.saveTranslations(stmt, rightResponses);
             System.out.println();
             questionsNum++;
@@ -178,9 +178,8 @@ public class Training {
                     rightResponses.add(currTrans);
                     nonUsedTranslations.remove(currTrans);
                     wrong = false;
-                    if(!checkedScope.word.toLowerCase().equals(response))//typo.
-                        if(difficulty != Hard)//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
-                            typos.put(response, checkedScope.word.toLowerCase());
+                    if(difficulty != Hard || !checkedScope.word.toLowerCase().matches(modifyString(response, Hard, checkedScope)))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
+                        typos.put(response, checkedScope.word.toLowerCase());
                     break;
                 }
             }
