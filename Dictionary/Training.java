@@ -178,7 +178,7 @@ public class Training {
                     rightResponses.add(currTrans);
                     nonUsedTranslations.remove(currTrans);
                     wrong = false;
-                    if(difficulty != Hard || !checkedScope.word.toLowerCase().matches(modifyString(response, Hard, checkedScope)))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
+                    if(difficulty != Hard && !checkedScope.word.toLowerCase().matches(modifyString(response, Hard, checkedScope)))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
                         typos.put(response, checkedScope.word.toLowerCase());
                     break;
                 }
@@ -240,6 +240,18 @@ public class Training {
                 //unnecessary 'to' before verbs
                 if(checkedScope.getClass() == EngWord.class && checkedScope.partOfSpeech == Word.PoS.Verb)
                     res = "(to)? " + res;
+
+                //any ending variants in ukr adj
+                if(checkedScope.getClass() == UkrWord.class && checkedScope.partOfSpeech == Word.PoS.Adjective){
+                regex = "(ий|а|е|і)";
+                //if(str.endsWith("ий") || str.endsWith("а") || str.endsWith("е") || str.endsWith("і")){    //works same, PoS in db useless//no words like уява shouldn't modify, but it does
+                    //res = res.replaceAll(regex+"$", regex);//doesn't work
+                    if(str.endsWith("ий"))res = res.substring(0, res.lastIndexOf('и'));
+                    if(str.endsWith("а")) res = res.substring(0, res.lastIndexOf('а'));
+                    if(str.endsWith("е")) res = res.substring(0, res.lastIndexOf('е'));
+                    if(str.endsWith("і")) res = res.substring(0, res.lastIndexOf('і'));
+                    res = res + regex;
+                }
         }
         return res;
     }

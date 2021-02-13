@@ -52,13 +52,14 @@ public class Update {
 
     public static void updateWord(Connection conn, int id, Word word)throws SQLException{
         var stat = conn.createStatement();
-        var sql = String.format("UPDATE %s SET word='%s', score=%s, pos='%s' WHERE id = %d", (word instanceof EngWord)?"eng_words":"ukr_words", word.word, word.score, word.partOfSpeech.name(), id);
+        var sql = String.format("UPDATE %s SET word='%s', score=%s, pos='%s' WHERE id = %d", (word instanceof EngWord)?"eng_words":"ukr_words", word.word.replaceAll("'", "''"), word.score, word.partOfSpeech.name(), id);
         stat.executeUpdate(sql);
         stat.close();
     }
 
     public static void definePoS(Statement stat, Tables table) throws SQLException{
-        if(table!= Tables.eng_words && table!=Tables.ukr_words)throw new IllegalArgumentException();
+        if(table!= Tables.eng_words && table!=Tables.ukr_words)
+            throw new IllegalArgumentException();
         var wordTable = Common.loadWordTable(stat, table, "pos = 'Unknown'");
         String answer = null;
         var in = new Scanner(System.in);
@@ -66,7 +67,7 @@ public class Update {
 
         for(var key: wordTable.keySet()){
             var word = wordTable.get(key);
-            System.out.println(word + " is a");
+            System.out.println(word.word.substring(0,1).toUpperCase() + word.word.substring(1) + " is a");
             for(int i = 0; i < 10; i++)
                 System.out.println("\t(" + ((i+1)%10) + ")" + parts[i]);
             System.out.println("\t(i)Idiom");
@@ -75,8 +76,10 @@ public class Update {
             answer = in.nextLine().toLowerCase();
             Word.PoS newPoS = null;
             String newWord = word.word;
-            if(answer.matches("\\d"))
+            if(answer.matches("[1-9]"))
                 newPoS = parts[Integer.parseInt(answer) - 1];
+            else if(answer.matches("0"))
+                newPoS = Word.PoS.PhrasalVerb;
             else{
                 if(answer.matches("qu?i?t?.*"))                         break;
                 else if(answer.matches("no?u?n?.*"))                    newPoS = Word.PoS.Noun;

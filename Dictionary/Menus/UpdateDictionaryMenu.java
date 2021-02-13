@@ -33,8 +33,16 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
     },
     DefinePoS {
         public boolean action(Statement stat)throws SQLException {
-            Update.definePoS(stat, Tables.eng_words);
-            Update.definePoS(stat, Tables.ukr_words);
+            System.out.println("Which table you want first?\n1. ukr_words\n2. eng_words");
+            var response = new Scanner(System.in).nextLine();
+            if(response.charAt(0) == '1') {
+                Update.definePoS(stat, Tables.ukr_words);
+                Update.definePoS(stat, Tables.eng_words);
+            }
+            else{
+                Update.definePoS(stat, Tables.eng_words);
+                Update.definePoS(stat, Tables.ukr_words);
+            }
             return false;
         }
         public String toString() { return "Define part of speech"; }
