@@ -4,6 +4,7 @@ import Dictionary.Entities.EngWord;
 import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Word;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -76,5 +77,12 @@ public class Common {
                 && Integer.toString(today.get(Calendar.YEAR)).equals(lastTrainingDate[2]))
             return true;
         return false;
+    }
+
+    public static Calendar getLastUpd() throws IOException {
+        var res = Calendar.getInstance();
+        var last_updParam = ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd").split("-");
+        res.set(Integer.parseInt(last_updParam[2]), Integer.parseInt(last_updParam[1]) - 1, Integer.parseInt(last_updParam[0]));
+        return res;
     }
 }

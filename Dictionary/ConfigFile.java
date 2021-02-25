@@ -41,4 +41,11 @@ public class ConfigFile{
         }
         throw new InvalidParameterException("Parameter " + param + " haven't found in " + pathname);
     }
+
+    //TODO: rewrite method as getParams
+    public static void setParam(String pathname, String paramName, String newValue) throws IOException{
+        var cfile = new ConfigFile(pathname);
+        cfile.params.put(paramName, newValue);
+        cfile.saveFile();
+    }
 }

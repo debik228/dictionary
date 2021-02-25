@@ -24,14 +24,14 @@ public class Training {
         ukrWords = Common.loadWordTable(stmt, Tables.ukr_words);
 
         var user = new ConfigFile("C:/Users/Yevgen/Desktop/pogromyvannja/JAVA/Dictionary/user.txt");
-        boolean lastTrainWasToday = Common.isToday(user.params.get("last_training"));
+        //boolean lastTrainWasToday = Common.isToday(user.params.get("last_training"));
 
-        if(!lastTrainWasToday) {
-            //updating info in user.txt
-            var today = Calendar.getInstance();
-            user.params.put("last_training", today.get(Calendar.DAY_OF_MONTH) + "-" + today.get(Calendar.MONTH) + "-" + today.get(Calendar.YEAR));
-            user.saveFile();
-        }
+        //if(!lastTrainWasToday) {
+        //    //updating info in user.txt
+        //    var today = Calendar.getInstance();
+        //    user.params.put("last_training", today.get(Calendar.DAY_OF_MONTH) + "-" + today.get(Calendar.MONTH)+1 + "-" + today.get(Calendar.YEAR));
+        //    user.saveFile();
+        //}
 
         //the training
         List<Translation> inp = null, res = null;
@@ -112,8 +112,8 @@ public class Training {
 
 
             for(var trans : rightResponses)
-                if(trans.last_upd.get(Calendar.DAY_OF_YEAR) != Calendar.getInstance().get(Calendar.DAY_OF_YEAR)         //if didn`t train
-                        || trans.last_upd.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR))              //today
+                if(trans.last_training.get(Calendar.DAY_OF_YEAR) != Calendar.getInstance().get(Calendar.DAY_OF_YEAR)         //if didn`t train
+                        || trans.last_training.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR))              //today
                     trans.addScore(award);
                 else
                     trans.addScore(1);

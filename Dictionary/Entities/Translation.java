@@ -10,13 +10,13 @@ public class Translation {
     public final int ukr_id;
     public final int eng_id;
     public int score;
-    public Calendar last_upd;
+    public Calendar last_training;
 
-    public Translation(int ukr_id, int eng_id, int score, Calendar last_upd){
+    public Translation(int ukr_id, int eng_id, int score, Calendar last_training){
         this.ukr_id = ukr_id;
         this.eng_id = eng_id;
         this.score = score;
-        this.last_upd = last_upd;
+        this.last_training = last_training;
     }
 
     public static ArrayList<Translation> loadTranslations(Statement stat) throws SQLException{
@@ -26,7 +26,7 @@ public class Translation {
     public static ArrayList<Translation> loadTranslations(Statement stat, String condition) throws SQLException{
         var res = new ArrayList<Translation>();
         ResultSet queryRes = null;
-        String query = "SELECT ukr_id, eng_id, score, last_upd FROM translation" + (condition.length() == 0 ? "" : " WHERE " + condition) + " ORDER BY score ASC;";
+        String query = "SELECT ukr_id, eng_id, score, last_training FROM translation" + (condition.length() == 0 ? "" : " WHERE " + condition) + " ORDER BY score ASC;";
         try {
             queryRes = stat.executeQuery(query);
         }catch (SQLException e){
@@ -36,8 +36,8 @@ public class Translation {
             int ukr_id = queryRes.getInt("ukr_id");
             int eng_id = queryRes.getInt("eng_id");
             int score = queryRes.getInt("score");
-            Calendar last_upd = Calendar.getInstance(); last_upd.setTime(queryRes.getDate("last_upd"));
-            res.add(new Translation(ukr_id, eng_id, score, last_upd));
+            Calendar last_training = Calendar.getInstance(); last_training.setTime(queryRes.getDate("last_training"));
+            res.add(new Translation(ukr_id, eng_id, score, last_training));
         }
         queryRes.close();
         return res;
@@ -49,38 +49,37 @@ public class Translation {
     public static void saveTranslations(Statement stat, List<Translation> translations) throws  SQLException{
         var query = new StringBuilder("BEGIN;\n");
         for(var trans : translations){
-            var str = String.format("UPDATE translation SET score=%d, last_upd='%d-%d-%d' WHERE ukr_id=%d AND eng_id=%d;\n", trans.score, trans.last_upd.get(Calendar.YEAR), trans.last_upd.get(Calendar.MONTH) + 1, trans.last_upd.get(Calendar.DAY_OF_MONTH), trans.ukr_id, trans.eng_id);
+            var str = String.format("UPDATE translation SET score=%d, last_training='%d-%d-%d' WHERE ukr_id=%d AND eng_id=%d;\n",
+                    trans.score, trans.last_training.get(Calendar.YEAR), trans.last_training.get(Calendar.MONTH) + 1, trans.last_training.get(Calendar.DAY_OF_MONTH), trans.ukr_id, trans.eng_id);
             query.append(str);
         }
         query.append("COMMIT;");
-        //System.out.println(query);
         stat.executeUpdate(query.toString());
     }
 
-    public static void updScoresToDate(Statement stmt)throws SQLException, IOException {
-        //if score have updated today - return
-        var user = new ConfigFile("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt");
-        var lastTrainingDate = user.params.get("last_training");
-        if(Common.isToday(lastTrainingDate)) return;
-
+    public static void updScoresToDate(Statement stmt)throws SQLException, IOException{
         List<Translation> translations = loadTranslations(stmt);
         var today = Calendar.getInstance();
+        var last_upd = Common.getLastUpd();
         for(var trans : translations){
-            var last_upd = trans.last_upd;
-            //last_upd.set(Calendar.MONTH, last_upd.get(Calendar.MONTH) + 1);
-            long diff = (365 * (today.get(Calendar.YEAR) - last_upd.get(Calendar.YEAR))) + (today.get(Calendar.DAY_OF_YEAR) - last_upd.get(Calendar.DAY_OF_YEAR)); //на високосні похуй
-            trans.score -= diff;
+            int diff = (365 * (today.get(Calendar.YEAR) - last_upd.get(Calendar.YEAR))) + (today.get(Calendar.DAY_OF_YEAR) - last_upd.get(Calendar.DAY_OF_YEAR)); //на високосні похуй
+            trans.addScore(-diff);
         }
         saveTranslations(stmt, translations);
     }
 
-    public void addScore(int increase){
+    public void addScore(int increase)throws IOException{
         score += increase;
-        last_upd = Calendar.getInstance();
+        var today = Calendar.getInstance();
+        if(increase <= 0)
+            if(!Common.isToday(ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd")))
+                ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd",
+                today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR)); //decreasing only in updScoresToDate
+        else             last_training = today;                                                                                     //increasing only while training
     }
 
     public String toString(){
-        return ukr_id + ", " + eng_id + ", " + score + ", " + last_upd.get(Calendar.YEAR) + '-' + (last_upd.get(Calendar.MONTH)+1) + '-' + last_upd.get(Calendar.DAY_OF_MONTH);
+        return ukr_id + ", " + eng_id + ", " + score + ", " + last_training.get(Calendar.YEAR) + '-' + (last_training.get(Calendar.MONTH)+1) + '-' + last_training.get(Calendar.DAY_OF_MONTH);
     }
 
     @Override
