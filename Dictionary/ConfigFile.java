@@ -23,7 +23,7 @@ public class ConfigFile{
 
     public void saveFile()throws IOException{
         var out = new BufferedWriter(new FileWriter(pathname));
-        for(var pair : params.entrySet())
+        for (var pair : params.entrySet())
             out.write(pair.getKey() + " = " + pair.getValue() + "\n");
         out.close();
     }

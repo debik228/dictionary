@@ -1,17 +1,16 @@
 package Dictionary.Entities;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
 abstract public class Word {
     public final String word;
     public int score;
     public final PoS partOfSpeech;
+    public final String regex;
 
-    Word(String word, int score, PoS partOfSpeech){
+    Word(String word, int score, PoS partOfSpeech, String regex){
         this.word = word;
         this.score = score;
         this.partOfSpeech = partOfSpeech;
+        this.regex = regex;
     }
 
     public String toString() {

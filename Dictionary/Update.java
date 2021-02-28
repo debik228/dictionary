@@ -101,8 +101,8 @@ public class Update {
             }
             if(newPoS == Word.PoS.Verb && table == Tables.eng_words) newWord = "to " + newWord;
             Word updatedWord = null;
-            if(table == Tables.eng_words)updatedWord = new EngWord(newWord, word.score, newPoS);
-            else                         updatedWord = new UkrWord(newWord, word.score, newPoS);
+            if(table == Tables.eng_words)updatedWord = new EngWord(newWord, word.score, newPoS, word.regex);
+            else                         updatedWord = new UkrWord(newWord, word.score, newPoS, word.regex);
             updateWord(stat.getConnection(), key, updatedWord);
         }
     }

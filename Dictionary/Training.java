@@ -12,6 +12,7 @@ import java.sql.Statement;
 import java.util.*;
 
 import static Dictionary.Difficulty.*;
+import static java.lang.Character.isLetter;
 
 public class Training {
 
@@ -173,12 +174,12 @@ public class Training {
             for(int i = 0; i < translationsVariants.size(); i++) {
                 var currTrans = translationsVariants.get(i);
                 Word checkedScope = from == Tables.ukr_words ? engWords.get(currTrans.eng_id) : ukrWords.get(currTrans.ukr_id);
-                String modified = modifyString(response, difficulty, checkedScope);
-                if(checkedScope.word.toLowerCase().matches(modified)){
+                String modified = modifyString(difficulty, checkedScope);
+                if(response.toLowerCase().matches(modified)){
                     rightResponses.add(currTrans);
                     nonUsedTranslations.remove(currTrans);
                     wrong = false;
-                    if(difficulty != Hard && !checkedScope.word.toLowerCase().matches(modifyString(response, Hard, checkedScope)))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
+                    if(difficulty != Hard && !response.toLowerCase().matches(modifyString(Hard, checkedScope)))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
                         typos.put(response, checkedScope.word.toLowerCase());
                     break;
                 }
@@ -189,70 +190,83 @@ public class Training {
         return new checkingResult(rightResponses, wrongResponses, nonUsedTranslations, typos);
     }
 
-    public static String modifyString(String str, Difficulty difficulty, Word checkedScope){
+    public static String modifyString(Difficulty difficulty, Word checkedScope){
+        var str = checkedScope.regex.toLowerCase();
         var res = str;//str is an original word. Please don't modify it.
         var sb = new StringBuilder();
+        String regex;
+
+        //sameness of endings -сь , -ся e.g. розпадатись = розпадатися
+        sb.setLength(0);//reset sb
+        if(str.matches(".*с[ья]\\s*.*")){
+            var modWords = res.split(" +");
+            var origWords = str.split(" +");
+            for(int i = 0; i < modWords.length; i++){
+                if(origWords[i].matches(".*с[ья]"))
+                    modWords[i] = modWords[i].substring(0, Math.max(modWords[i].lastIndexOf('я'), modWords[i].lastIndexOf('ь'))) + "[ья]";  //inserts [ья] instead of ending of modWords[i]
+                sb.append(modWords[i]);
+                sb.append(" ");
+            }
+            res = sb.toString();
+        }
+
+        //unnecessary 'to' before verbs
+        if(checkedScope.getClass() == EngWord.class && checkedScope.partOfSpeech == Word.PoS.Verb) {
+            if (str.startsWith("to "))
+                res = res.replaceAll("to ", "(to )?");
+                //res = res.substring(res.indexOf(str.charAt("to ".length()))); //doesnt word with words which starts with 'o' (e.g. to offer)
+            //res = "(to )?" + res;
+        }
+
+        //any ending variants in ukr adj
+        if(checkedScope.getClass() == UkrWord.class && checkedScope.partOfSpeech == Word.PoS.Adjective){
+            regex = "(ий|а|е|і)";
+            //if(str.endsWith("ий") || str.endsWith("а") || str.endsWith("е") || str.endsWith("і")){    //works same, PoS in db useless//no words like уява shouldn't modify, but it does
+            //res = res.replaceAll(regex+"$", regex);//doesn't work
+            if(str.endsWith("ий"))res = res.substring(0, res.lastIndexOf('и'));
+            if(str.endsWith("а")) res = res.substring(0, res.lastIndexOf('а'));
+            if(str.endsWith("е")) res = res.substring(0, res.lastIndexOf('е'));
+            if(str.endsWith("і")) res = res.substring(0, res.lastIndexOf('і'));
+            res = res + regex;
+        }
+
+        //ignore some non-word-characters
+        sb.setLength(0);
+        regex = "[\\s.,']";                        //boundary characters, apostrophe, comma and dot. Another non-word characters don't include because it will spoil regular expressions
+        var words = res.split(regex + "+");  //previously used [^а-яА-Я^\w]
+        for(var word : words){
+            sb.append(word);
+            sb.append(regex + "*");
+        }
+        res = sb.toString();
 
         switch (difficulty) {
             case Easy:
                 //res = res.replaceAll("[ck]", "[ck]");
             case Medium:
-                sb.setLength(0);//reset sb
-
                 //allow any word-character duplication
+                sb.setLength(0);
                 Character prevChar = null;
                 for (var ch : res.toCharArray()) {
-                    if(prevChar != null && prevChar == ch)continue;
+                    if(prevChar != null && prevChar == ch && isLetter(ch))continue;
                     sb.append(ch);
                     prevChar = ch;
-                    if((ch >= 'a' && ch <= 'z') ||    //a-z
-                       (ch >= 'A' && ch <= 'Z') ||    //A-Z
-                       (ch >= 'а' && ch <= 'я') ||    //а-я
-                       (ch >= 'А' && ch <= 'Я'))      //А-Я
+                    if(isLetter(ch))
                         sb.append('+');
                 }
                 res = sb.toString();
-            case Hard:
-                //sameness of endings -сь , -ся e.g. розпадатись = розпадатися
-                sb.setLength(0);//reset sb
-                if(str.matches(".*с[ья]\\s*.*")){
-                    var modWords = res.split(" +");
-                    var origWords = str.split(" +");
-                    for(int i = 0; i < modWords.length; i++){
-                        if(origWords[i].matches(".*с[ья]"))
-                            modWords[i] = modWords[i].substring(0, Math.max(modWords[i].lastIndexOf('я'), modWords[i].lastIndexOf('ь'))) + "[ья]";  //inserts [ья] instead of ending of modWords[i]
-                        sb.append(modWords[i]);
-                        sb.append(" ");
-                    }
-                    res = sb.toString();
-                }
-
-                //ignore some non-word-characters
-                sb.setLength(0);//reset sb
-                String regex = "[\\s.,']";                  //boundary characters, apostrophe, comma and dot. Another non-word characters don't include because it will spoil regular expressions
-                var words = res.split(regex + "+");  //previously used [^а-яА-Я^\w]
-                for(var word : words){
-                    sb.append(word);
-                    sb.append(regex + "*");
-                }
-                res = sb.toString();
-
-                //unnecessary 'to' before verbs
-                if(checkedScope.getClass() == EngWord.class && checkedScope.partOfSpeech == Word.PoS.Verb)
-                    res = "(to)? " + res;
-
-                //any ending variants in ukr adj
-                if(checkedScope.getClass() == UkrWord.class && checkedScope.partOfSpeech == Word.PoS.Adjective){
-                regex = "(ий|а|е|і)";
-                //if(str.endsWith("ий") || str.endsWith("а") || str.endsWith("е") || str.endsWith("і")){    //works same, PoS in db useless//no words like уява shouldn't modify, but it does
-                    //res = res.replaceAll(regex+"$", regex);//doesn't work
-                    if(str.endsWith("ий"))res = res.substring(0, res.lastIndexOf('и'));
-                    if(str.endsWith("а")) res = res.substring(0, res.lastIndexOf('а'));
-                    if(str.endsWith("е")) res = res.substring(0, res.lastIndexOf('е'));
-                    if(str.endsWith("і")) res = res.substring(0, res.lastIndexOf('і'));
-                    res = res + regex;
-                }
         }
         return res;
     }
+
+    //TODO доробити методи і застосувати їх в checkResponse
+    /**
+     * @param gained рядок, що перевіряється
+     * @param expected очікувана відповідь
+     * @return true, якщо якщо gained відрізняється від expected не більше ніж на otherCharsNumber символів і false в іншому випадку
+     */
+    public static boolean sameExceptOf(int otherCharsNumber, String gained, String expected){
+        return false;
+    }
+
 }

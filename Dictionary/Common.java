@@ -50,15 +50,16 @@ public class Common {
         if(table != Tables.eng_words && table != Tables.ukr_words) throw new IllegalArgumentException(table.toString() + " isn't a word table");
         var res = new HashMap<Integer, Word>();
         var wordClass = table == Tables.ukr_words? UkrWord.class : EngWord.class;
-        var query = "SELECT id, word, score, pos FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
+        var query = "SELECT id, word, score, pos, regex FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
         var queryRes = stmt.executeQuery(query);
         while(queryRes.next()){
             var id = queryRes.getInt("id");
             var word = queryRes.getString("word");
             var score = queryRes.getInt("score");
             var pos = Word.PoS.getConstant((String)queryRes.getObject("pos"));
+            var regex = queryRes.getString("regex");
             try {
-                res.put(id, wordClass.getConstructor(String.class, int.class, Word.PoS.class).newInstance(word, score, pos));
+                res.put(id, wordClass.getConstructor(String.class, int.class, Word.PoS.class, String.class).newInstance(word, score, pos, regex));
             }catch (Exception e){throw new RuntimeException(e);}
         }
         queryRes.close();
@@ -79,6 +80,7 @@ public class Common {
         return false;
     }
 
+    //TODO replace this method with ConfigFile.getParamDate(String paramName) and static ConfigFile.getParamDate(String path, String paramName)
     public static Calendar getLastUpd() throws IOException {
         var res = Calendar.getInstance();
         var last_updParam = ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd").split("-");
