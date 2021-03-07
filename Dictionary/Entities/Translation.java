@@ -58,14 +58,17 @@ public class Translation {
     }
 
     public static void updScoresToDate(Statement stmt)throws SQLException, IOException{
-        List<Translation> translations = loadTranslations(stmt);
+        //List<Translation> translations = loadTranslations(stmt);
         var today = Calendar.getInstance();
         var last_upd = Common.getLastUpd();
-        for(var trans : translations){
-            int diff = (365 * (today.get(Calendar.YEAR) - last_upd.get(Calendar.YEAR))) + (today.get(Calendar.DAY_OF_YEAR) - last_upd.get(Calendar.DAY_OF_YEAR)); //на високосні похуй
-            trans.addScore(-diff);
-        }
-        saveTranslations(stmt, translations);
+        int diff = (365 * (today.get(Calendar.YEAR) - last_upd.get(Calendar.YEAR))) + (today.get(Calendar.DAY_OF_YEAR) - last_upd.get(Calendar.DAY_OF_YEAR)); //на високосні похуй
+        var sql = "UPDATE translation SET score = score - " + diff;
+        stmt.executeUpdate(sql);
+        ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd",
+                today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR));
+        //for(var trans : translations)
+        //    trans.addScore(-diff);
+        //saveTranslations(stmt, translations);
     }
 
     public void addScore(int increase)throws IOException{
@@ -76,6 +79,13 @@ public class Translation {
                 ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd",
                 today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR)); //decreasing only in updScoresToDate
         else             last_training = today;                                                                                     //increasing only while training
+    }
+
+    public static int getAvgScore(Statement stat) throws SQLException{
+        var sql = "SELECT avg(score) FROM translation";
+        var qRes = stat.executeQuery(sql);
+        qRes.next();
+        return (int)qRes.getDouble(1);
     }
 
     public String toString(){

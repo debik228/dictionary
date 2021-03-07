@@ -18,11 +18,13 @@ public class Training {
 
     static HashMap<Integer, Word> engWords;
     static HashMap<Integer, Word> ukrWords;
+    static ActivityHistory history;
 
     public static void train(Statement stmt) throws SQLException, IOException {
 
         engWords = Common.loadWordTable(stmt, Tables.eng_words);
         ukrWords = Common.loadWordTable(stmt, Tables.ukr_words);
+        history = new ActivityHistory(stmt);
 
         var user = new ConfigFile("C:/Users/Yevgen/Desktop/pogromyvannja/JAVA/Dictionary/user.txt");
         //boolean lastTrainWasToday = Common.isToday(user.params.get("last_training"));
@@ -43,6 +45,7 @@ public class Training {
             if (res.size() > 0) res = trainingStatement(stmt, 2, res, Medium);
             while(res.size() > 0)
                 res = trainingStatement(stmt, 1, res, Easy);
+            history.saveDailyScore(stmt);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -112,12 +115,18 @@ public class Training {
             HashMap<String, String>  typos                = checkingResult.typos;
 
 
-            for(var trans : rightResponses)
-                if(trans.last_training.get(Calendar.DAY_OF_YEAR) != Calendar.getInstance().get(Calendar.DAY_OF_YEAR)         //if didn`t train
-                        || trans.last_training.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR))              //today
+            for(var trans : rightResponses) {
+                if (trans.last_training.get(Calendar.DAY_OF_YEAR) != Calendar.getInstance().get(Calendar.DAY_OF_YEAR)         //if didn`t train
+                        || trans.last_training.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR)) {           //today
                     trans.addScore(award);
-                else
+                    history.increaseDailyScore(award);
+                }
+                else {
                     trans.addScore(1);
+                    history.increaseDailyScore(1);
+                }
+                trans.last_training.setTime(new Date());
+            }
             Translation.saveTranslations(stmt, rightResponses);
             translations.removeAll(rightResponses);
 
@@ -150,8 +159,8 @@ public class Training {
                     System.out.print("\u001B[34m" + "\nТакож можна перекласти як: " + "\u001B[0m");
                     for(int i = 0; i < nonUsedTranslations.size(); i++) {
                         var tmpTrans = nonUsedTranslations.get(i);
-                        if(from == Tables.ukr_words)    System.out.print(scope.get(tmpTrans.eng_id).word + ' ');
-                        else                            System.out.print(scope.get(tmpTrans.ukr_id).word + ' ');
+                        if(from == Tables.ukr_words)    System.out.print(scope.get(tmpTrans.eng_id).word + ", " );
+                        else                            System.out.print(scope.get(tmpTrans.ukr_id).word + ", " );
                     }
                 }
             }

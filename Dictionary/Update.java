@@ -1,6 +1,7 @@
 package Dictionary;
 
 import Dictionary.Entities.EngWord;
+import Dictionary.Entities.Translation;
 import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Word;
 
@@ -11,35 +12,36 @@ import java.util.Scanner;
 
 public class Update {
     public static void addWords(Statement statement, String[] ukr, String[] eng) throws SQLException{
-        var query = new StringBuilder("BEGIN;\nINSERT INTO ukr_words (word) VALUES ");
+        int initScore = Math.min(Translation.getAvgScore(statement), 0);
+        var query = new StringBuilder("BEGIN;\nINSERT INTO ukr_words (word, regex) VALUES ");
 
         //first query(ukr_words)
         for (var uWord : ukr)
             if(!Common.contains(statement, Tables.ukr_words, "word = '" + uWord + "'"))
-                query.append("('" + uWord + "'), ");
+                query.append("('" + uWord + "', '" + uWord + "'), ");
         query.setLength(query.length() - 2);
         query.append(";\n");
-        if(query.length() == "BEGIN;\nINSERT INTO ukr_words (word) VALUES ".length())query.setLength(7);                //if no one ukrainian word can be added clear query
+        if(query.length() == "BEGIN;\nINSERT INTO ukr_words (word, regex) VALUES ".length())query.setLength(7);                //if no one ukrainian word can be added clear query
 
         //second query(eng_words)
-        query.append("INSERT INTO eng_words (word) VALUES ");
+        query.append("INSERT INTO eng_words (word, regex) VALUES ");
         for (var eWord : eng)
             if(!Common.contains(statement, Tables.eng_words, "word = '" + eWord + "'"))
-                query.append("('" + eWord + "'), ");
+                query.append("('" + eWord + "', '" + eWord + "'), ");
         query.setLength(query.length() - 2);
-        if(query.toString().endsWith("INSERT INTO eng_words (word) VALUE"))query.setLength(query.length() - "INSERT INTO eng_words (word) VALUE".length());
+        if(query.toString().endsWith("INSERT INTO eng_words (word, regex) VALUE"))query.setLength(query.length() - "INSERT INTO eng_words (word, regex) VALUE".length());
 
         //executing first and second query
         System.out.println(query);
         statement.executeUpdate(query.toString());
 
         //last query(mtm connections)
-        query = new StringBuilder("INSERT INTO translation (ukr_id, eng_id) VALUES ");
+        query = new StringBuilder("INSERT INTO translation (ukr_id, eng_id, score) VALUES ");
         for(var uWord : ukr){
             int uId = Common.getId(statement, Tables.ukr_words, uWord);
             for(var eWord : eng){
                 int eId = Common.getId(statement, Tables.eng_words, eWord);
-                query.append(String.format("(%d, %d), ", uId, eId));
+                query.append(String.format("(%d, %d, %d), ", uId, eId, initScore));
             }
         }
         query.setLength(query.length() - 2);
