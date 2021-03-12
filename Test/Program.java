@@ -18,7 +18,7 @@ public class Program {
         Translation.updScoresToDate(stat);            //Don't update score automatically in debug database
 
         //dialog
-        System.out.println("Hi there!\nYour last training was on " + ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd"));
+        System.out.println("Hi there!\nYour last training was on " + ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd"));
         var in = new BufferedReader(new InputStreamReader(System.in));
         MenuHandler.handle(MainMenuSelections.class, conn);
     }

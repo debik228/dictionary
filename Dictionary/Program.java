@@ -19,7 +19,7 @@ public class Program {
             Translation.updScoresToDate(stat);
 
             //dialog
-            System.out.println("Hi there!\nYour last training was on " + ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd"));
+            System.out.println("Hi there!\nYour last training was on " + ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd"));
             MenuHandler.handle(MainMenuSelections.class, conn);
         }
 

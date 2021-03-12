@@ -21,7 +21,16 @@ public class ConfigFile{
         in.close();
     }
 
+    /**
+     *
+     * @throws IOException - when executing with windows cmd line. System.out.println(userTxt.exists()); System.out.println(userTxt.canRead()); System.out.println(userTxt.canWrite()); returns true. If replace out with in at line 33, it will work
+     */
     public void saveFile()throws IOException{
+        //File userTxt = new File(pathname);
+        //System.out.println(userTxt.exists());
+        //System.out.println(userTxt.canRead());
+        //System.out.println(userTxt.canWrite());
+        //var out = new FileOutputStream(userTxt);
         var out = new BufferedWriter(new FileWriter(pathname));
         for (var pair : params.entrySet())
             out.write(pair.getKey() + " = " + pair.getValue() + "\n");
@@ -42,7 +51,6 @@ public class ConfigFile{
         throw new InvalidParameterException("Parameter " + param + " haven't found in " + pathname);
     }
 
-    //TODO: rewrite method as getParams
     public static void setParam(String pathname, String paramName, String newValue) throws IOException{
         var cfile = new ConfigFile(pathname);
         cfile.params.put(paramName, newValue);

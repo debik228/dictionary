@@ -46,18 +46,29 @@ public class Common {
         return queryRes.next();
     }
 
+    public static HashMap<Integer, String> loadRegexTable(Statement stmt, Tables table) throws SQLException{
+        if(table != Tables.ukr_regex && table != Tables.eng_regex) throw new IllegalArgumentException();
+        var res = new HashMap<Integer, String>();
+        var sql = "SELECT word_id, regex FROM " + table;
+        var queryRes = stmt.executeQuery(sql);
+        while (queryRes.next())
+            res.put(queryRes.getInt("word_id"), queryRes.getString("regex"));
+        return res;
+    }
+
     public static HashMap<Integer, Word> loadWordTable(Statement stmt, Tables table, String Condition)throws SQLException{
         if(table != Tables.eng_words && table != Tables.ukr_words) throw new IllegalArgumentException(table.toString() + " isn't a word table");
+        var regexes = loadRegexTable(stmt, (table == Tables.ukr_words)?Tables.ukr_regex:Tables.eng_regex);
         var res = new HashMap<Integer, Word>();
         var wordClass = table == Tables.ukr_words? UkrWord.class : EngWord.class;
-        var query = "SELECT id, word, score, pos, regex FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
+        var query = "SELECT id, word, score, pos FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
         var queryRes = stmt.executeQuery(query);
         while(queryRes.next()){
             var id = queryRes.getInt("id");
             var word = queryRes.getString("word");
             var score = queryRes.getInt("score");
             var pos = Word.PoS.getConstant((String)queryRes.getObject("pos"));
-            var regex = queryRes.getString("regex");
+            var regex = regexes.get(id); if(regex == null) regex = word;
             try {
                 res.put(id, wordClass.getConstructor(String.class, int.class, Word.PoS.class, String.class).newInstance(word, score, pos, regex));
             }catch (Exception e){throw new RuntimeException(e);}
@@ -83,7 +94,7 @@ public class Common {
     //TODO replace this method with ConfigFile.getParamDate(String paramName) and static ConfigFile.getParamDate(String path, String paramName)
     public static Calendar getLastUpd() throws IOException {
         var res = Calendar.getInstance();
-        var last_updParam = ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd").split("-");
+        var last_updParam = ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd").split("-");
         res.set(Integer.parseInt(last_updParam[2]), Integer.parseInt(last_updParam[1]) - 1, Integer.parseInt(last_updParam[0]));
         return res;
     }

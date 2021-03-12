@@ -26,7 +26,7 @@ public class Training {
         ukrWords = Common.loadWordTable(stmt, Tables.ukr_words);
         history = new ActivityHistory(stmt);
 
-        var user = new ConfigFile("C:/Users/Yevgen/Desktop/pogromyvannja/JAVA/Dictionary/user.txt");
+        //var user = new ConfigFile("C:/Users/Yevgen/Desktop/pogromyvannja/JAVA/Dictionary/user.txt");
         //boolean lastTrainWasToday = Common.isToday(user.params.get("last_training"));
 
         //if(!lastTrainWasToday) {
@@ -37,35 +37,14 @@ public class Training {
         //}
 
         //the training
-        List<Translation> inp = null, res = null;
-        try {
-            inp = Translation.loadTranslations(stmt, "score <= (SELECT avg(score) FROM dictionary)");
+        List<Translation> inp, res;
+        inp = Translation.loadTranslations(stmt, "score <= (SELECT avg(score) FROM dictionary)");
 
-            res = trainingStatement(stmt, 5, inp, Hard);
-            if (res.size() > 0) res = trainingStatement(stmt, 2, res, Medium);
-            while(res.size() > 0)
-                res = trainingStatement(stmt, 1, res, Easy);
-            history.saveDailyScore(stmt);
-        }
-        catch (Exception e){
-            e.printStackTrace();
-            var logFile = new File("log.txt");
-            var out = new BufferedWriter(new FileWriter(logFile));
-            out.write(e.toString() + "\n");
-            for(var cause : e.getStackTrace())
-                out.write("\tat " + cause + '\n');
-
-            out.write("\ninp:\n");
-            for (var trans : inp)
-                out.write(trans.toString() +  '\n');
-
-            out.write("\nres:\n");
-            if(res != null)
-                for (var trans : res)
-                    out.write(trans.toString() + '\n');
-            out.flush();
-            out.close();
-        }
+        res = trainingStatement(stmt, 5, inp, Hard);
+        if (res.size() > 0) res = trainingStatement(stmt, 2, res, Medium);
+        while(res.size() > 0)
+            res = trainingStatement(stmt, 1, res, Easy);
+        history.saveDailyScore(stmt);
     }
 
     public static List<Translation> trainingStatement(Statement stmt, int award, List<Translation> translations, Difficulty difficulty)throws SQLException, IOException{

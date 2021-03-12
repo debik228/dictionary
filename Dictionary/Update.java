@@ -13,23 +13,23 @@ import java.util.Scanner;
 public class Update {
     public static void addWords(Statement statement, String[] ukr, String[] eng) throws SQLException{
         int initScore = Math.min(Translation.getAvgScore(statement), 0);
-        var query = new StringBuilder("BEGIN;\nINSERT INTO ukr_words (word, regex) VALUES ");
+        var query = new StringBuilder("BEGIN;\nINSERT INTO ukr_words (word) VALUES ");
 
         //first query(ukr_words)
         for (var uWord : ukr)
             if(!Common.contains(statement, Tables.ukr_words, "word = '" + uWord + "'"))
-                query.append("('" + uWord + "', '" + uWord + "'), ");
+                query.append("('" + uWord + "'), ");
         query.setLength(query.length() - 2);
         query.append(";\n");
-        if(query.length() == "BEGIN;\nINSERT INTO ukr_words (word, regex) VALUES ".length())query.setLength(7);                //if no one ukrainian word can be added clear query
+        if(query.length() == "BEGIN;\nINSERT INTO ukr_words (word) VALUES ".length())query.setLength(7);                //if no one ukrainian word can be added clear query
 
         //second query(eng_words)
-        query.append("INSERT INTO eng_words (word, regex) VALUES ");
+        query.append("INSERT INTO eng_words (word) VALUES ");
         for (var eWord : eng)
             if(!Common.contains(statement, Tables.eng_words, "word = '" + eWord + "'"))
-                query.append("('" + eWord + "', '" + eWord + "'), ");
+                query.append("('" + eWord + "'), ");
         query.setLength(query.length() - 2);
-        if(query.toString().endsWith("INSERT INTO eng_words (word, regex) VALUE"))query.setLength(query.length() - "INSERT INTO eng_words (word, regex) VALUE".length());
+        if(query.toString().endsWith("INSERT INTO eng_words (word) VALUE"))query.setLength(query.length() - "INSERT INTO eng_words (word) VALUE".length());
 
         //executing first and second query
         System.out.println(query);
@@ -101,7 +101,11 @@ public class Update {
                     newPoS = Word.PoS.Unknown;
                 }
             }
-            if(newPoS == Word.PoS.Verb && table == Tables.eng_words) newWord = "to " + newWord;
+            if(newPoS == Word.PoS.Verb && table == Tables.eng_words) {
+                System.out.println("Add \"to\" part? y/n");
+                if(in.nextLine().toLowerCase().startsWith("y"))
+                    newWord = "to " + newWord;
+            }
             Word updatedWord = null;
             if(table == Tables.eng_words)updatedWord = new EngWord(newWord, word.score, newPoS, word.regex);
             else                         updatedWord = new UkrWord(newWord, word.score, newPoS, word.regex);

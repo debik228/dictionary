@@ -64,7 +64,7 @@ public class Translation {
         int diff = (365 * (today.get(Calendar.YEAR) - last_upd.get(Calendar.YEAR))) + (today.get(Calendar.DAY_OF_YEAR) - last_upd.get(Calendar.DAY_OF_YEAR)); //на високосні похуй
         var sql = "UPDATE translation SET score = score - " + diff;
         stmt.executeUpdate(sql);
-        ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd",
+        ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd",
                 today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR));
         //for(var trans : translations)
         //    trans.addScore(-diff);
@@ -75,8 +75,8 @@ public class Translation {
         score += increase;
         var today = Calendar.getInstance();
         if(increase <= 0)
-            if(!Common.isToday(ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd")))
-                ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.txt", "last_upd",
+            if(!Common.isToday(ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd")))
+                ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd",
                 today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR)); //decreasing only in updScoresToDate
         else             last_training = today;                                                                                     //increasing only while training
     }
