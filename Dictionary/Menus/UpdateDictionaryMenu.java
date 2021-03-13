@@ -91,7 +91,7 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                         if(currRegex != null)
                             stat.executeUpdate(String.format("UPDATE %s SET regex = '%s' WHERE word_id = %d", loadingRegexTable, newRegex.replaceAll("'", "''"), id));
                         else
-                            stat.execute(String.format("INSERT INTO %s (regex) VALUES ('%s')", loadingRegexTable, newRegex.replaceAll("'", "''")));
+                            stat.execute(String.format("INSERT INTO %s (word_id, regex) VALUES (%d, '%s')", loadingRegexTable, id, newRegex.replaceAll("'", "''")));
                     }catch (NullPointerException e){ System.out.println("There is no word with such id. Please input correct number."); }
                 }
                 else if(answer.equals(("back"))) return false;
