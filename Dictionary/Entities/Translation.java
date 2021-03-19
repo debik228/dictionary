@@ -5,6 +5,7 @@ import java.sql.*;
 import java.util.*;
 import Dictionary.ConfigFile;
 import Dictionary.Common;
+import Dictionary.Program;
 
 public class Translation {
     public final int ukr_id;
@@ -64,7 +65,7 @@ public class Translation {
         int diff = (365 * (today.get(Calendar.YEAR) - last_upd.get(Calendar.YEAR))) + (today.get(Calendar.DAY_OF_YEAR) - last_upd.get(Calendar.DAY_OF_YEAR)); //на високосні похуй
         var sql = "UPDATE translation SET score = score - " + diff;
         stmt.executeUpdate(sql);
-        ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd",
+        ConfigFile.setParam(Program.CFG_PATH, "last_upd",
                 today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR));
         //for(var trans : translations)
         //    trans.addScore(-diff);
@@ -75,17 +76,17 @@ public class Translation {
         score += increase;
         var today = Calendar.getInstance();
         if(increase <= 0)
-            if(!Common.isToday(ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd")))
-                ConfigFile.setParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd",
-                today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR)); //decreasing only in updScoresToDate
-        else             last_training = today;                                                                                     //increasing only while training
+            if(!Common.isToday(ConfigFile.getParam(Program.CFG_PATH, "last_upd")))
+                ConfigFile.setParam(Program.CFG_PATH, "last_upd",
+                Common.getTodayDate());                                                                      //decreasing only in updScoresToDate
+        else             last_training = today;                                                               //increasing only while training
     }
 
     public static int getAvgScore(Statement stat) throws SQLException{
         var sql = "SELECT avg(score) FROM translation";
         var qRes = stat.executeQuery(sql);
         qRes.next();
-        return (int)qRes.getDouble(1);
+        return (int)Math.round(qRes.getDouble(1));
     }
 
     public String toString(){

@@ -3,6 +3,7 @@ package Dictionary;
 import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.HashMap;
+import java.util.Scanner;
 
 public class ConfigFile{
     public final String pathname;
@@ -10,28 +11,40 @@ public class ConfigFile{
 
     public ConfigFile(String pathname)throws IOException{
         this.pathname = pathname;
-        var in = new BufferedReader(new FileReader(pathname));
-        while(in.ready()){
-            var str = in.readLine();
-            if(str.matches(".* *= *.*")) {
-                var words = str.split(" *= *");
-                params.put(words[0], words[1]);
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new FileReader(pathname));
+            while(in.ready()){
+                var str = in.readLine();
+                if(str.matches(".* *= *.*")) {
+                    var words = str.split(" *= *");
+                    params.put(words[0], words[1]);
+                }
             }
+            in.close();
+        }catch (FileNotFoundException e){
+            readDBConnectParams();
+            params.put("last_upd", Common.getTodayDate());
+            this.saveFile();
         }
-        in.close();
+    }
+
+    public void readDBConnectParams(){
+        var in = new Scanner(System.in);
+        System.out.println("Please, enter your postgres username");
+        params.put("username",in.nextLine());
+        System.out.println("Please, enter your postgres password. It is necessary for db connection");
+        params.put("password",in.nextLine());
     }
 
     /**
-     *
-     * @throws IOException - when executing with windows cmd line. System.out.println(userTxt.exists()); System.out.println(userTxt.canRead()); System.out.println(userTxt.canWrite()); returns true. If replace out with in at line 33, it will work
+     * @throws IOException - when executing with windows cmd line, ad saving txt file. System.out.println(userTxt.exists()) System.out.println(userTxt.canRead()) System.out.println(userTxt.canWrite()) returns true.
      */
     public void saveFile()throws IOException{
-        //File userTxt = new File(pathname);
-        //System.out.println(userTxt.exists());
-        //System.out.println(userTxt.canRead());
-        //System.out.println(userTxt.canWrite());
-        //var out = new FileOutputStream(userTxt);
-        var out = new BufferedWriter(new FileWriter(pathname));
+        BufferedWriter out = null;
+        var cfgFile = new File(pathname);
+        cfgFile.createNewFile();
+        out = new BufferedWriter(new FileWriter(pathname));
         for (var pair : params.entrySet())
             out.write(pair.getKey() + " = " + pair.getValue() + "\n");
         out.close();
@@ -50,7 +63,6 @@ public class ConfigFile{
         }
         throw new InvalidParameterException("Parameter " + param + " haven't found in " + pathname);
     }
-
     public static void setParam(String pathname, String paramName, String newValue) throws IOException{
         var cfile = new ConfigFile(pathname);
         cfile.params.put(paramName, newValue);

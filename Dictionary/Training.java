@@ -16,26 +16,20 @@ import static java.lang.Character.isLetter;
 
 public class Training {
 
-    static HashMap<Integer, Word> engWords;
-    static HashMap<Integer, Word> ukrWords;
-    static ActivityHistory history;
+    public final static HashMap<Integer, Word> engWords;
+    public final static HashMap<Integer, Word> ukrWords;
+    public final static ActivityHistory history;
+
+    static {
+        try {
+            var stmt = Program.dictionary.getConn().createStatement();
+            engWords = Common.loadWordTable(stmt, Tables.eng_words);
+            ukrWords = Common.loadWordTable(stmt, Tables.ukr_words);
+            history = new ActivityHistory(stmt);
+        }catch (SQLException e){throw new RuntimeException(e);}
+    }
 
     public static void train(Statement stmt) throws SQLException, IOException {
-
-        engWords = Common.loadWordTable(stmt, Tables.eng_words);
-        ukrWords = Common.loadWordTable(stmt, Tables.ukr_words);
-        history = new ActivityHistory(stmt);
-
-        //var user = new ConfigFile("C:/Users/Yevgen/Desktop/pogromyvannja/JAVA/Dictionary/user.txt");
-        //boolean lastTrainWasToday = Common.isToday(user.params.get("last_training"));
-
-        //if(!lastTrainWasToday) {
-        //    //updating info in user.txt
-        //    var today = Calendar.getInstance();
-        //    user.params.put("last_training", today.get(Calendar.DAY_OF_MONTH) + "-" + today.get(Calendar.MONTH)+1 + "-" + today.get(Calendar.YEAR));
-        //    user.saveFile();
-        //}
-
         //the training
         List<Translation> inp, res;
         inp = Translation.loadTranslations(stmt, "score <= (SELECT avg(score) FROM dictionary)");
@@ -88,35 +82,23 @@ public class Training {
             var translationVariants = from == Tables.ukr_words ? Translation.loadTranslations(stmt, "ukr_id = " + loadedWordId) : Translation.loadTranslations(stmt, "eng_id = " + loadedWordId);
 
             var checkingResult = checkResponse(response, translationVariants, difficulty, from);
-            LinkedList<Translation>  rightResponses       = checkingResult.rightResponses;
-            LinkedList<String>       wrongResponses       = checkingResult.wrongResponses;
-            LinkedList<Translation>  nonUsedTranslations  = checkingResult.nonUsedTranslations;
-            HashMap<String, String>  typos                = checkingResult.typos;
+            LinkedList<Translation>  rightResponses       = checkingResult.getRightResponses();
+            LinkedList<String>       wrongResponses       = checkingResult.getWrongResponses();
+            LinkedList<Translation>  nonUsedTranslations  = checkingResult.getNonUsedTranslations();
+            HashMap<String, String>  typos                = checkingResult.getTypos();
 
 
-            for(var trans : rightResponses) {
-                if (trans.last_training.get(Calendar.DAY_OF_YEAR) != Calendar.getInstance().get(Calendar.DAY_OF_YEAR)         //if didn`t train
-                        || trans.last_training.get(Calendar.YEAR) != Calendar.getInstance().get(Calendar.YEAR)) {           //today
-                    trans.addScore(award);
-                    history.increaseDailyScore(award);
-                }
-                else {
-                    trans.addScore(1);
-                    history.increaseDailyScore(1);
-                }
-                trans.last_training.setTime(new Date());
-            }
-            Translation.saveTranslations(stmt, rightResponses);
+            checkingResult.addScore(stmt, award);
             translations.removeAll(rightResponses);
 
             if(rightResponses.size() == 0){
-                translations.remove(currTrans);
-                nextTour.add(currTrans);
                 System.out.print("\u001B[31m" + "Неправильно!" + "\u001B[0m"
                         + "\nМожна перекласти як: ");
                 for(var trans : translationVariants)
                     if(from == Tables.ukr_words)    System.out.print(scope.get(trans.eng_id).word + ", ");
                     else                            System.out.print(scope.get(trans.ukr_id).word + ", ");
+                translations.remove(currTrans);
+                nextTour.add(currTrans);
             }
             else{
                 System.out.print("\u001B[32m" + "Правильно!" + "\u001B[0m");
@@ -143,8 +125,7 @@ public class Training {
                     }
                 }
             }
-            translations.removeAll(nonUsedTranslations);//we've show all the variants, so we shouldn't give a chance to give a right response in this tour
-            Translation.saveTranslations(stmt, rightResponses);
+            translations.removeAll(nonUsedTranslations);//we've show all the variants, so shouldn't give a chance to give a right response in this tour
             System.out.println();
             questionsNum++;
         }
@@ -185,18 +166,19 @@ public class Training {
         String regex;
 
         //sameness of endings -сь , -ся e.g. розпадатись = розпадатися
-        sb.setLength(0);//reset sb
-        if(str.matches(".*с[ья]\\s*.*")){
-            var modWords = res.split(" +");
-            var origWords = str.split(" +");
-            for(int i = 0; i < modWords.length; i++){
-                if(origWords[i].matches(".*с[ья]"))
-                    modWords[i] = modWords[i].substring(0, Math.max(modWords[i].lastIndexOf('я'), modWords[i].lastIndexOf('ь'))) + "[ья]";  //inserts [ья] instead of ending of modWords[i]
-                sb.append(modWords[i]);
-                sb.append(" ");
-            }
-            res = sb.toString();
-        }
+        //sb.setLength(0);//reset sb
+        //if(str.matches(".*с[ья][^а-яА-Я]*.*")){
+        //    var modWords = res.split(" +");
+        //    var origWords = str.split(" +");
+        //    for(int i = 0; i < modWords.length; i++){
+        //        if(origWords[i].matches(".*с[ья]"))
+        //            modWords[i] = modWords[i].substring(0, Math.max(modWords[i].lastIndexOf('я'), modWords[i].lastIndexOf('ь'))) + "[ья]";  //inserts [ья] instead of ending of modWords[i]
+        //        sb.append(modWords[i]);
+        //        sb.append(" ");
+        //    }
+        //    res = sb.toString();
+        //}
+        res = res.replaceAll("с[ья]", "с[ья]");
 
         //unnecessary 'to' before verbs
         if(checkedScope.getClass() == EngWord.class && checkedScope.partOfSpeech == Word.PoS.Verb) {

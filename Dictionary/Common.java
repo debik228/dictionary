@@ -10,15 +10,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 
 public class Common {
-    public static Connection getConn(){
-        Connection conn = null;
-        try{
-            Class.forName("org.postgresql.Driver").getConstructor().newInstance();
-            conn = DriverManager.getConnection("jdbc:postgresql:dictionary", "postgres", "123456789");
-        }catch (Exception e){System.err.println(e);}
-        return conn;
-    }
-
     public static int getSequanceCurrval(Statement statement, String seqName) throws SQLException{
         ResultSet queryRes = null;
         try {
@@ -94,8 +85,18 @@ public class Common {
     //TODO replace this method with ConfigFile.getParamDate(String paramName) and static ConfigFile.getParamDate(String path, String paramName)
     public static Calendar getLastUpd() throws IOException {
         var res = Calendar.getInstance();
-        var last_updParam = ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd").split("-");
+        var last_updParam = ConfigFile.getParam(Program.CFG_PATH, "last_upd").split("-");
         res.set(Integer.parseInt(last_updParam[2]), Integer.parseInt(last_updParam[1]) - 1, Integer.parseInt(last_updParam[0]));
         return res;
+    }
+
+    public static boolean sameDate(Calendar date1, Calendar date2){
+        return date1.get(Calendar.DAY_OF_YEAR) == date2.get(Calendar.DAY_OF_YEAR)
+                && date1.get(Calendar.YEAR) == date2.get(Calendar.YEAR);
+    }
+
+    public static String getTodayDate(){
+        var today = Calendar.getInstance();
+        return today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR);
     }
 }

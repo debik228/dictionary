@@ -9,17 +9,23 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 
 public class Program {
+    public static Database dictionary;
+    public static final String CFG_PATH = "C:\\user.cfg";
+
     public static void main(String[] args) throws Exception{
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         Connection conn = null;
         try {
-            conn = Common.getConn();
+            //var user = new ConfigFile("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg");
+            var user = new ConfigFile(CFG_PATH);
+            dictionary = new Database("dictionary", user);
+            conn = dictionary.getConn();
             var stat = conn.createStatement();
 
             Translation.updScoresToDate(stat);
 
             //dialog
-            System.out.println("Hi there!\nYour last training was on " + ConfigFile.getParam("C:\\Users\\Yevgen\\Desktop\\pogromyvannja\\JAVA\\Dictionary\\user.cfg", "last_upd"));
+            System.out.println("Hi there!\nYour last training was on " + user.params.get("last_upd"));
             MenuHandler.handle(MainMenuSelections.class, conn);
         }
 
