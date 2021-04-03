@@ -1,7 +1,6 @@
 package Dictionary;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -136,6 +135,7 @@ public class Database {
             Class.forName("org.postgresql.Driver").getConstructor().newInstance();
             conn = DriverManager.getConnection("jdbc:postgresql:dictionary", username, password);
         }catch (org.postgresql.util.PSQLException e){
+            //TODO винести цю хуйню в окремий метод
             System.err.println("Wrong username or password. Please input correct username and password");
             var cfg = new File(cfgFilePath);
             cfg.delete();

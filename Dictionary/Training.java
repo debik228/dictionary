@@ -1,5 +1,6 @@
 package Dictionary;
 
+import Dictionary.Auxiliary.RandomDistributor;
 import Dictionary.Entities.EngWord;
 import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Translation;
@@ -11,60 +12,62 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
+import static Dictionary.Common.sameDate;
 import static Dictionary.Difficulty.*;
 import static java.lang.Character.isLetter;
 
 public class Training {
 
-    public final static HashMap<Integer, Word> engWords;
-    public final static HashMap<Integer, Word> ukrWords;
-    public final static ActivityHistory history;
+    private final static HashMap<Integer, Word> engWords;
+    private final static HashMap<Integer, Word> ukrWords;
+    private static final Scanner in = new Scanner(System.in, StandardCharsets.UTF_8);
 
     static {
         try {
             var stmt = Program.dictionary.getConn().createStatement();
             engWords = Common.loadWordTable(stmt, Tables.eng_words);
             ukrWords = Common.loadWordTable(stmt, Tables.ukr_words);
-            history = new ActivityHistory(stmt);
+            Program.history = new ActivityHistory(stmt);
+            stmt.close();
         }catch (SQLException e){throw new RuntimeException(e);}
     }
 
-    public static void train(Statement stmt) throws SQLException, IOException {
-        //the training
-        List<Translation> inp, res;
-        inp = Translation.loadTranslations(stmt, "score <= (SELECT avg(score) FROM dictionary)");
+    private final int award;
+    private final Difficulty difficulty;
+    private final List<Translation> translations;
 
-        res = trainingStatement(stmt, 5, inp, Hard);
-        if (res.size() > 0) res = trainingStatement(stmt, 2, res, Medium);
-        while(res.size() > 0)
-            res = trainingStatement(stmt, 1, res, Easy);
-        history.saveDailyScore(stmt);
+    public Training(int award, Difficulty difficulty, List<Translation> translations){
+        this.award = award;
+        this.difficulty = difficulty;
+        this.translations = translations;
     }
 
-    public static List<Translation> trainingStatement(Statement stmt, int award, List<Translation> translations, Difficulty difficulty)throws SQLException, IOException{
+    public List<Translation> training()throws SQLException, IOException{
+        var conn = Program.dictionary.getConn();
+        var stmt = conn.createStatement();
         System.out.println(difficulty.name());
         var nextTour = new LinkedList<Translation>();
 
-        var rand = new Random();
         var ukrToEng = new LinkedList<Translation>();
         var engToUkr = new LinkedList<Translation>();
-        int initTranslationsSize = translations.size();
-        for(int i = 0; i < initTranslationsSize; i++){
-            var curr = translations.get(rand.nextInt(translations.size()));
-            translations.remove(curr);
-            if(rand.nextBoolean())  ukrToEng.add(curr);
-            else                    engToUkr.add(curr);
-        }
+
+        var dist = new RandomDistributor(0.4, new Random());
+        dist.distribute(translations, ukrToEng, engToUkr);
 
         if(engToUkr.size() > 0) nextTour.addAll(
-                trainingHalfStatement(stmt, award, engToUkr, difficulty, Tables.eng_words));
+                trainingStatement(stmt, engToUkr, Tables.eng_words));
 
         if(ukrToEng.size() > 0) nextTour.addAll(
-                trainingHalfStatement(stmt, award, ukrToEng, difficulty, Tables.ukr_words));
+                trainingStatement(stmt, ukrToEng, Tables.ukr_words));
+
+        stmt.close();
+        conn.close();
+
         return nextTour;
     }
 
-    public static List<Translation> trainingHalfStatement(Statement stmt, int award, List<Translation> translations, Difficulty difficulty, Tables from)throws SQLException, IOException{
+    //TODO виділити в окремий клас (вкладений в цей, закритий)
+    public List<Translation> trainingStatement(Statement stmt, LinkedList<Translation> translations, Tables from)throws SQLException, IOException{
         int questionsTot = translations.size(),
             questionsNum = 1;
         var source = from == Tables.eng_words ? engWords:ukrWords;
@@ -72,7 +75,6 @@ public class Training {
 
         Translation currTrans = null;
         var nextTour = new LinkedList<Translation>();
-        Scanner in = new Scanner(System.in, StandardCharsets.UTF_8);
         while(translations.size() != 0){
             currTrans = translations.get(0);
             int loadedWordId = from == Tables.ukr_words ? currTrans.ukr_id:currTrans.eng_id;
@@ -83,48 +85,18 @@ public class Training {
 
             var checkingResult = checkResponse(response, translationVariants, difficulty, from);
             LinkedList<Translation>  rightResponses       = checkingResult.getRightResponses();
-            LinkedList<String>       wrongResponses       = checkingResult.getWrongResponses();
             LinkedList<Translation>  nonUsedTranslations  = checkingResult.getNonUsedTranslations();
-            HashMap<String, String>  typos                = checkingResult.getTypos();
 
 
             checkingResult.addScore(stmt, award);
             translations.removeAll(rightResponses);
 
             if(rightResponses.size() == 0){
-                System.out.print("\u001B[31m" + "Неправильно!" + "\u001B[0m"
-                        + "\nМожна перекласти як: ");
-                for(var trans : translationVariants)
-                    if(from == Tables.ukr_words)    System.out.print(scope.get(trans.eng_id).word + ", ");
-                    else                            System.out.print(scope.get(trans.ukr_id).word + ", ");
                 translations.remove(currTrans);
                 nextTour.add(currTrans);
             }
-            else{
-                System.out.print("\u001B[32m" + "Правильно!" + "\u001B[0m");
-                if(typos.size() > 0){
-                    System.out.print("\u001B[33m");//yellow
-                    if(typos.size() == 1)
-                        System.out.print("\nОдрук в слові ");
-                    else System.out.print("\nОдруки в словах: ");
-                    System.out.print("\u001B[0m");//reset
-                    for(var pair : typos.entrySet())
-                        System.out.print(pair.getValue() + ' ');
-                }
-                if(wrongResponses.size() > 0){
-                    System.out.print("\u001B[31m" +"\nНеправильні переклади: " + "\u001B[0m");
-                    for(var str : wrongResponses)
-                        System.out.print(str + ", ");
-                }
-                if(nonUsedTranslations.size() > 0) { //There is non used translation of this word
-                    System.out.print("\u001B[34m" + "\nТакож можна перекласти як: " + "\u001B[0m");
-                    for(int i = 0; i < nonUsedTranslations.size(); i++) {
-                        var tmpTrans = nonUsedTranslations.get(i);
-                        if(from == Tables.ukr_words)    System.out.print(scope.get(tmpTrans.eng_id).word + ", " );
-                        else                            System.out.print(scope.get(tmpTrans.ukr_id).word + ", " );
-                    }
-                }
-            }
+            checkingResult.printResults(scope, translationVariants, from);
+
             translations.removeAll(nonUsedTranslations);//we've show all the variants, so shouldn't give a chance to give a right response in this tour
             System.out.println();
             questionsNum++;
@@ -132,7 +104,7 @@ public class Training {
         return nextTour;
     }
 
-    public static checkingResult checkResponse(HashSet<String> responses, List<Translation> translationsVariants, Difficulty difficulty, Tables from){
+    public checkingResult checkResponse(HashSet<String> responses, List<Translation> translationsVariants, Difficulty difficulty, Tables from){
         var rightResponses = new LinkedList<Translation>();
         var wrongResponses = new LinkedList<String>();
         var nonUsedTranslations = new LinkedList<>(translationsVariants);
@@ -165,19 +137,6 @@ public class Training {
         var sb = new StringBuilder();
         String regex;
 
-        //sameness of endings -сь , -ся e.g. розпадатись = розпадатися
-        //sb.setLength(0);//reset sb
-        //if(str.matches(".*с[ья][^а-яА-Я]*.*")){
-        //    var modWords = res.split(" +");
-        //    var origWords = str.split(" +");
-        //    for(int i = 0; i < modWords.length; i++){
-        //        if(origWords[i].matches(".*с[ья]"))
-        //            modWords[i] = modWords[i].substring(0, Math.max(modWords[i].lastIndexOf('я'), modWords[i].lastIndexOf('ь'))) + "[ья]";  //inserts [ья] instead of ending of modWords[i]
-        //        sb.append(modWords[i]);
-        //        sb.append(" ");
-        //    }
-        //    res = sb.toString();
-        //}
         res = res.replaceAll("с[ья]", "с[ья]");
 
         //unnecessary 'to' before verbs
@@ -239,4 +198,72 @@ public class Training {
         return false;
     }
 
+    private class checkingResult {
+        private final LinkedList<Translation> rightResponses;
+        private final LinkedList<String>      wrongResponses;
+        private final LinkedList<Translation> nonUsedTranslations;
+        private final HashMap<String, String> typos;
+
+        public checkingResult(LinkedList<Translation> rightResponses, LinkedList<String> wrongResponses, LinkedList<Translation> nonUsedTranslations, HashMap<String, String> typos){
+            this.rightResponses = rightResponses;
+            this.wrongResponses = wrongResponses;
+            this.nonUsedTranslations = nonUsedTranslations;
+            this.typos = typos;
+        }
+
+        public LinkedList<Translation> getRightResponses() { return rightResponses; }
+        public LinkedList<String> getWrongResponses() { return wrongResponses; }
+        public LinkedList<Translation> getNonUsedTranslations() { return nonUsedTranslations; }
+        public HashMap<String, String> getTypos() { return typos; }
+
+        public void addScore(Statement stmt, int award)throws IOException, SQLException {
+            for(var trans : rightResponses) {
+                if(!sameDate(trans.last_training, Calendar.getInstance())){
+                    trans.addScore(award);
+                    Program.history.increaseDailyScore(award);
+                }
+                else {
+                    trans.addScore(1);
+                    Program.history.increaseDailyScore(1);
+                }
+                trans.last_training.setTime(new Date());
+            }
+            Translation.saveTranslations(stmt, rightResponses);
+        }
+
+        public void printResults(HashMap<Integer, Word> scope, ArrayList<Translation> translationVariants, Tables from){
+            if(rightResponses.size() == 0){
+                System.out.print("\u001B[31m" + "Неправильно!" + "\u001B[0m"
+                        + "\nМожна перекласти як: ");
+                for(var trans : translationVariants)
+                    if(from == Tables.ukr_words)    System.out.print(scope.get(trans.eng_id).word + ", ");
+                    else                            System.out.print(scope.get(trans.ukr_id).word + ", ");
+            }
+            else{
+                System.out.print("\u001B[32m" + "Правильно!" + "\u001B[0m");
+                if(typos.size() > 0){
+                    System.out.print("\u001B[33m");//yellow
+                    if(typos.size() == 1)
+                        System.out.print("\nОдрук в слові ");
+                    else System.out.print("\nОдруки в словах: ");
+                    System.out.print("\u001B[0m");//reset
+                    for(var pair : typos.entrySet())
+                        System.out.print(pair.getValue() + ' ');
+                }
+                if(wrongResponses.size() > 0){
+                    System.out.print("\u001B[31m" +"\nНеправильні переклади: " + "\u001B[0m");
+                    for(var str : wrongResponses)
+                        System.out.print(str + ", ");
+                }
+                if(nonUsedTranslations.size() > 0) { //There is non used translation of this word
+                    System.out.print("\u001B[34m" + "\nТакож можна перекласти як: " + "\u001B[0m");
+                    for(int i = 0; i < nonUsedTranslations.size(); i++) {
+                        var tmpTrans = nonUsedTranslations.get(i);
+                        if(from == Tables.ukr_words)    System.out.print(scope.get(tmpTrans.eng_id).word + ", " );
+                        else                            System.out.print(scope.get(tmpTrans.ukr_id).word + ", " );
+                    }
+                }
+            }
+        }
+    }
 }

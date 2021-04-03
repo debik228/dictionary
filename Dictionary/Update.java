@@ -59,10 +59,11 @@ public class Update {
         stat.close();
     }
 
-    public static void definePoS(Statement stat, Tables table) throws SQLException{
+    //TODO переробити для одного слова
+    public static void definePoS(Statement stat, Tables table)throws SQLException{
         if(table!= Tables.eng_words && table!=Tables.ukr_words)
             throw new IllegalArgumentException();
-        var wordTable = Common.loadWordTable(stat, table, "pos = 'Unknown'");
+        var wordTable = Common.loadWordTable(stat, table, "pos = 'Unknown' ORDER BY last_upd DESC");
         String answer = null;
         var in = new Scanner(System.in);
         var parts = Word.PoS.class.getEnumConstants();
@@ -111,5 +112,13 @@ public class Update {
             else                         updatedWord = new UkrWord(newWord, word.score, newPoS, word.regex);
             updateWord(stat.getConnection(), key, updatedWord);
         }
+    }
+
+    public static void defineRegex(Statement stat, int wordID, String regex)throws SQLException{
+        var regexTable = regex.matches(".*[A-Za-z]*.*") ? Tables.eng_regex:Tables.ukr_words;
+        if(Common.contains(stat, regexTable, "word_id = " + wordID))
+            stat.executeUpdate(String.format("UPDATE %s SET regex = '%s' WHERE word_id = %d", regexTable, regex.replaceAll("'", "''"), wordID));
+        else
+            stat.execute(String.format("INSERT INTO %s (word_id, regex) VALUES (%d, '%s')", regexTable, wordID, regex.replaceAll("'", "''")));
     }
 }
