@@ -32,15 +32,15 @@ public class ActivityHistory {
         }
     }
 
-    public void increaseDailyScore(int increasing){
+    public void increaseDailyScore(int increasing, Statement stat)throws SQLException{
         if(increasing < 0)throw new IllegalArgumentException();
         dailyScore += increasing;
+        saveDailyScore(stat);
         history.put(today, dailyScore);
     }
 
     public void saveDailyScore(Statement stat) throws SQLException{
         String sql;
-        var today = new Date();
         if(newNotation) {
             sql = String.format("INSERT INTO activity_history (score) VALUES (%d);", dailyScore);
             stat.execute(sql);
@@ -52,10 +52,6 @@ public class ActivityHistory {
     }
 
     public String toString() {
-        //var sb = new StringBuilder("рот єбав того дауна, який зробив січень нульовим місяцем\n");
-        //for(var key : history.keySet())
-        //    sb.append(String.format("%d-%d-%d - %d\n", key.get(1), (key.get(2) + 1), key.get(5), history.get(key)));
-        //return sb.toString();
         return history.toString();
     }
 }

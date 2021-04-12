@@ -1,6 +1,5 @@
 package Dictionary;
 
-import Dictionary.Auxiliary.RandomDistributor;
 import Dictionary.Entities.EngWord;
 import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Translation;
@@ -16,86 +15,48 @@ import static Dictionary.Common.sameDate;
 import static Dictionary.Difficulty.*;
 import static java.lang.Character.isLetter;
 
-public class Training {
-
-    private final static HashMap<Integer, Word> engWords;
-    private final static HashMap<Integer, Word> ukrWords;
+public class TrainingStatement {
     private static final Scanner in = new Scanner(System.in, StandardCharsets.UTF_8);
 
-    static {
-        try {
-            var stmt = Program.dictionary.getConn().createStatement();
-            engWords = Common.loadWordTable(stmt, Tables.eng_words);
-            ukrWords = Common.loadWordTable(stmt, Tables.ukr_words);
-            Program.history = new ActivityHistory(stmt);
-            stmt.close();
-        }catch (SQLException e){throw new RuntimeException(e);}
-    }
-
-    private final int award;
     private final Difficulty difficulty;
     private final List<Translation> translations;
+    private final Tables translatingFrom;
 
-    public Training(int award, Difficulty difficulty, List<Translation> translations){
-        this.award = award;
+    private int questionsTot;
+    private int questionsNum = 1;
+
+    public TrainingStatement(Difficulty difficulty, List<Translation> translations, Tables translatingFrom){
         this.difficulty = difficulty;
         this.translations = translations;
+        this.translatingFrom = translatingFrom;
+        this.questionsTot = translations.size();
     }
 
-    public List<Translation> training()throws SQLException, IOException{
+    public List<Translation> start()throws SQLException, IOException{
         var conn = Program.dictionary.getConn();
-        var stmt = conn.createStatement();
-        System.out.println(difficulty.name());
-        var nextTour = new LinkedList<Translation>();
-
-        var ukrToEng = new LinkedList<Translation>();
-        var engToUkr = new LinkedList<Translation>();
-
-        var dist = new RandomDistributor(0.4, new Random());
-        dist.distribute(translations, ukrToEng, engToUkr);
-
-        if(engToUkr.size() > 0) nextTour.addAll(
-                trainingStatement(stmt, engToUkr, Tables.eng_words));
-
-        if(ukrToEng.size() > 0) nextTour.addAll(
-                trainingStatement(stmt, ukrToEng, Tables.ukr_words));
-
-        stmt.close();
-        conn.close();
-
-        return nextTour;
-    }
-
-    //TODO виділити в окремий клас (вкладений в цей, закритий)
-    public List<Translation> trainingStatement(Statement stmt, LinkedList<Translation> translations, Tables from)throws SQLException, IOException{
-        int questionsTot = translations.size(),
-            questionsNum = 1;
-        var source = from == Tables.eng_words ? engWords:ukrWords;
-        var scope  = from == Tables.eng_words ? ukrWords:engWords;
+        var stmt = conn.createStatement();             //TODO зробити в database метод, що повертав би statement і позабирати нахуй подібну хуйню звідусіль
 
         Translation currTrans = null;
         var nextTour = new LinkedList<Translation>();
         while(translations.size() != 0){
             currTrans = translations.get(0);
-            int loadedWordId = from == Tables.ukr_words ? currTrans.ukr_id:currTrans.eng_id;
-            System.out.println("\u001B[37m" + questionsNum + "/" + questionsTot + " Як перекладаєцця " + source.get(loadedWordId).word + "\u001B[0m");
-            var response = new HashSet<String>();
-            Collections.addAll(response, in.nextLine().toLowerCase().split(", *"));
-            var translationVariants = from == Tables.ukr_words ? Translation.loadTranslations(stmt, "ukr_id = " + loadedWordId) : Translation.loadTranslations(stmt, "eng_id = " + loadedWordId);
+            askForTranslation(currTrans);
+            HashSet<String> response = getResponse();
+            List<Translation> translationVariants = Translation.loadTranslations(stmt,
+                    (translatingFrom == Tables.ukr_words ?"ukr_id = ":"eng_id = ") + currTrans.getWordId(translatingFrom));
 
-            var checkingResult = checkResponse(response, translationVariants, difficulty, from);
+            var checkingResult = checkResponse(response, translationVariants, translatingFrom);
             LinkedList<Translation>  rightResponses       = checkingResult.getRightResponses();
             LinkedList<Translation>  nonUsedTranslations  = checkingResult.getNonUsedTranslations();
 
-
-            checkingResult.addScore(stmt, award);
+            checkingResult.addScore(stmt, difficulty.getStandardAward());
             translations.removeAll(rightResponses);
 
-            if(rightResponses.size() == 0){
+            if(rightResponses.isEmpty()){
                 translations.remove(currTrans);
                 nextTour.add(currTrans);
             }
-            checkingResult.printResults(scope, translationVariants, from);
+            checkingResult.printResults(translationVariants, translatingFrom);
 
             translations.removeAll(nonUsedTranslations);//we've show all the variants, so shouldn't give a chance to give a right response in this tour
             System.out.println();
@@ -104,7 +65,18 @@ public class Training {
         return nextTour;
     }
 
-    public checkingResult checkResponse(HashSet<String> responses, List<Translation> translationsVariants, Difficulty difficulty, Tables from){
+    private void askForTranslation(Translation currTrans){
+        System.out.println("\u001B[37m" + questionsNum + "/" + questionsTot + " Як перекладаєцця " + currTrans.getWord(translatingFrom) + "\u001B[0m");
+    }
+
+    private HashSet<String> getResponse(){
+        var response = new HashSet<String>();
+        var responseString = in.nextLine().toLowerCase();
+        Collections.addAll(response, responseString.split(", *"));
+        return response;
+    }
+
+    private QuestionResults checkResponse(HashSet<String> responses, List<Translation> translationsVariants, Tables translatingFrom){
         var rightResponses = new LinkedList<Translation>();
         var wrongResponses = new LinkedList<String>();
         var nonUsedTranslations = new LinkedList<>(translationsVariants);
@@ -112,15 +84,15 @@ public class Training {
 
         for(String response : responses){
             var wrong = true;
-            for(int i = 0; i < translationsVariants.size(); i++) {
-                var currTrans = translationsVariants.get(i);
-                Word checkedScope = from == Tables.ukr_words ? engWords.get(currTrans.eng_id) : ukrWords.get(currTrans.ukr_id);
+            for(var currTransVariant : translationsVariants) {
+                Tables translatingTo = Tables.getOppositeTo(translatingFrom);
+                Word checkedScope = currTransVariant.getWord(translatingTo);
                 String modified = modifyString(difficulty, checkedScope);
-                if(response.toLowerCase().matches(modified)){
-                    rightResponses.add(currTrans);
-                    nonUsedTranslations.remove(currTrans);
+                if(response.matches(modified)){
+                    rightResponses.add(currTransVariant);
+                    nonUsedTranslations.remove(currTransVariant);
                     wrong = false;
-                    if(difficulty != Hard && !response.toLowerCase().matches(modifyString(Hard, checkedScope)))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
+                    if(difficulty != Hard && !response.matches(modifyString(Hard, checkedScope)))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
                         typos.put(response, checkedScope.word.toLowerCase());
                     break;
                 }
@@ -128,7 +100,7 @@ public class Training {
             if(wrong)wrongResponses.add(response);
         }
 
-        return new checkingResult(rightResponses, wrongResponses, nonUsedTranslations, typos);
+        return new QuestionResults(rightResponses, wrongResponses, nonUsedTranslations, typos);
     }
 
     public static String modifyString(Difficulty difficulty, Word checkedScope){
@@ -143,7 +115,7 @@ public class Training {
         if(checkedScope.getClass() == EngWord.class && checkedScope.partOfSpeech == Word.PoS.Verb) {
             if (str.startsWith("to "))
                 res = res.replaceAll("to ", "(to )?");
-                //res = res.substring(res.indexOf(str.charAt("to ".length()))); //doesnt word with words which starts with 'o' (e.g. to offer)
+            //res = res.substring(res.indexOf(str.charAt("to ".length()))); //doesnt word with words which starts with 'o' (e.g. to offer)
             //res = "(to )?" + res;
         }
 
@@ -198,13 +170,19 @@ public class Training {
         return false;
     }
 
-    private class checkingResult {
+    private static class QuestionResults {
+        private static String RED_TEXT = "\u001B[31m";
+        private static String GREEN_TEXT = "\u001B[32m";
+        private static String YELLOW_TEXT = "\u001B[33m";
+        private static String BLUE_TEXT = "\u001B[34m";
+        private static String RESET = "\u001B[0m";
+
         private final LinkedList<Translation> rightResponses;
         private final LinkedList<String>      wrongResponses;
         private final LinkedList<Translation> nonUsedTranslations;
         private final HashMap<String, String> typos;
 
-        public checkingResult(LinkedList<Translation> rightResponses, LinkedList<String> wrongResponses, LinkedList<Translation> nonUsedTranslations, HashMap<String, String> typos){
+        public QuestionResults(LinkedList<Translation> rightResponses, LinkedList<String> wrongResponses, LinkedList<Translation> nonUsedTranslations, HashMap<String, String> typos){
             this.rightResponses = rightResponses;
             this.wrongResponses = wrongResponses;
             this.nonUsedTranslations = nonUsedTranslations;
@@ -216,52 +194,68 @@ public class Training {
         public LinkedList<Translation> getNonUsedTranslations() { return nonUsedTranslations; }
         public HashMap<String, String> getTypos() { return typos; }
 
+        public static void turnOffColorization(){
+            RED_TEXT = GREEN_TEXT = YELLOW_TEXT = BLUE_TEXT = RESET = "";
+        }
+
         public void addScore(Statement stmt, int award)throws IOException, SQLException {
             for(var trans : rightResponses) {
                 if(!sameDate(trans.last_training, Calendar.getInstance())){
                     trans.addScore(award);
-                    Program.history.increaseDailyScore(award);
+                    Program.history.increaseDailyScore(award, stmt);
                 }
                 else {
                     trans.addScore(1);
-                    Program.history.increaseDailyScore(1);
+                    Program.history.increaseDailyScore(1, stmt);
                 }
                 trans.last_training.setTime(new Date());
             }
-            Translation.saveTranslations(stmt, rightResponses);
+            Translation.updTranslations(stmt, rightResponses);
         }
 
-        public void printResults(HashMap<Integer, Word> scope, ArrayList<Translation> translationVariants, Tables from){
-            if(rightResponses.size() == 0){
-                System.out.print("\u001B[31m" + "Неправильно!" + "\u001B[0m"
-                        + "\nМожна перекласти як: ");
-                for(var trans : translationVariants)
-                    if(from == Tables.ukr_words)    System.out.print(scope.get(trans.eng_id).word + ", ");
-                    else                            System.out.print(scope.get(trans.ukr_id).word + ", ");
+        public void printResults(List<Translation> translationVariants, Tables translatingFrom){
+            var translatingTo = Tables.getOppositeTo(translatingFrom);
+            if(rightResponses.isEmpty()){
+                printPossibleTranslations(translationVariants, translatingTo);
             }
             else{
-                System.out.print("\u001B[32m" + "Правильно!" + "\u001B[0m");
-                if(typos.size() > 0){
-                    System.out.print("\u001B[33m");//yellow
-                    if(typos.size() == 1)
-                        System.out.print("\nОдрук в слові ");
-                    else System.out.print("\nОдруки в словах: ");
-                    System.out.print("\u001B[0m");//reset
-                    for(var pair : typos.entrySet())
-                        System.out.print(pair.getValue() + ' ');
-                }
-                if(wrongResponses.size() > 0){
-                    System.out.print("\u001B[31m" +"\nНеправильні переклади: " + "\u001B[0m");
-                    for(var str : wrongResponses)
-                        System.out.print(str + ", ");
-                }
-                if(nonUsedTranslations.size() > 0) { //There is non used translation of this word
-                    System.out.print("\u001B[34m" + "\nТакож можна перекласти як: " + "\u001B[0m");
-                    for(int i = 0; i < nonUsedTranslations.size(); i++) {
-                        var tmpTrans = nonUsedTranslations.get(i);
-                        if(from == Tables.ukr_words)    System.out.print(scope.get(tmpTrans.eng_id).word + ", " );
-                        else                            System.out.print(scope.get(tmpTrans.ukr_id).word + ", " );
-                    }
+                System.out.print(GREEN_TEXT + "Правильно!" + RESET);
+                printTypos();
+                printWrongResponses();
+                printUnusedTranslations(translatingTo);
+            }
+        }
+        private void printPossibleTranslations(List<Translation> translationVariants, Tables translatingTo){
+            System.out.print(RED_TEXT + "Неправильно!" + RESET
+                    + "\nМожна перекласти як: ");
+            for(var trans : translationVariants)
+                System.out.print(trans.getWord(translatingTo) + ", ");
+        }
+        private void printTypos(){
+            if(!typos.isEmpty()){
+                System.out.print(YELLOW_TEXT);
+                if(typos.size() == 1)
+                    System.out.print("\nОдрук в слові ");
+                else System.out.print("\nОдруки в словах: ");
+                System.out.print(RESET);//reset
+                for(var pair : typos.entrySet())
+                    System.out.print(pair.getValue() + ' ');
+            }
+        }
+        private void printWrongResponses(){
+            if(wrongResponses.size() == 1)
+                System.out.print(RED_TEXT +"\nНеправильний переклад: " + RESET);
+            else if(wrongResponses.size() > 1)
+                System.out.print(RED_TEXT +"\nНеправильні переклади: " + RESET);
+            for(var str : wrongResponses)
+                System.out.print(str + ", ");
+        }
+        private void printUnusedTranslations(Tables translatingTo){
+            if(!nonUsedTranslations.isEmpty()) {
+                System.out.print(BLUE_TEXT + "\nТакож можна перекласти як: " + RESET);
+                for(int i = 0; i < nonUsedTranslations.size(); i++) {
+                    var tmpTrans = nonUsedTranslations.get(i);
+                    System.out.print(tmpTrans.getWord(translatingTo) +  ", " );
                 }
             }
         }

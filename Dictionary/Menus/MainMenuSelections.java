@@ -2,7 +2,6 @@ package Dictionary.Menus;
 
 import Dictionary.Auxiliary.RandomDistributor;
 import Dictionary.Entities.Translation;
-import Dictionary.Training;
 import Dictionary.TrainingStatement;
 
 import java.sql.Statement;
@@ -17,45 +16,31 @@ import static Dictionary.Program.history;
 public enum MainMenuSelections implements AbstractMenu{
     StartTraining{
         public boolean action(Statement stat) throws Exception{
-            List<Translation> initTranslationList = Translation.loadTranslations(stat, "score <= (SELECT avg(score) FROM dictionary)");
+            List<Translation>
+                    ukrToEng = new LinkedList<>(),
+                    engToUkr = new LinkedList<>();
+            var dist = new RandomDistributor(0.4, new Random());
+            dist.distribute(Translation.loadTranslations(stat, "score <= (SELECT avg(score) FROM dictionary)"), ukrToEng, engToUkr);
 
-            var hardLevel = new Training(5, Hard, initTranslationList);
-            List<Translation> prevStatementResult = hardLevel.training();
+            var ukrToEngStat = new TrainingStatement(Hard, ukrToEng, ukr_words);
+            ukrToEng = ukrToEngStat.start();
 
-            var midLevel = new Training(2, Medium, prevStatementResult);
-            prevStatementResult = midLevel.training();
+            var engToUkrStat = new TrainingStatement(Hard, engToUkr, eng_words);
+            engToUkr = engToUkrStat.start();
 
-            while(prevStatementResult.size() > 0) {
-                var easyLevel = new Training(1, Easy, prevStatementResult);
-                prevStatementResult = easyLevel.training();
+            ukrToEngStat = new TrainingStatement(Medium, ukrToEng, ukr_words);
+            ukrToEng = ukrToEngStat.start();
+
+            engToUkrStat = new TrainingStatement(Medium, engToUkr, eng_words);
+            engToUkr = engToUkrStat.start();
+
+            while(ukrToEng.size() != 0 && engToUkr.size() != 0){
+                ukrToEngStat = new TrainingStatement(Easy, ukrToEng, ukr_words);
+                ukrToEng = ukrToEngStat.start();
+
+                engToUkrStat = new TrainingStatement(Easy, engToUkr, eng_words);
+                engToUkr = engToUkrStat.start();
             }
-
-            /*huinya*/
-            //List<Translation>
-            //        ukrToEng = new LinkedList<>(),
-            //        engToUkr = new LinkedList<>();
-            //var dist = new RandomDistributor(0.4, new Random());
-            //dist.distribute(Translation.loadTranslations(stat, "score <= (SELECT avg(score) FROM dictionary)"), ukrToEng, engToUkr);
-
-            //var ukrToEngStat = new TrainingStatement(5, Hard, ukrToEng, ukr_words, stat);
-            //ukrToEng = ukrToEngStat.start();
-            //
-            //var engToUkrStat = new TrainingStatement(5, Hard, engToUkr, eng_words, stat);
-            //engToUkr = engToUkrStat.start();
-
-            //ukrToEngStat = new TrainingStatement(2, Medium, ukrToEng, ukr_words, stat);
-            //ukrToEng = ukrToEngStat.start();
-
-            //engToUkrStat = new TrainingStatement(2, Medium, engToUkr, eng_words, stat);
-            //engToUkr = engToUkrStat.start();
-            //
-            //while(ukrToEng.size() != 0 && engToUkr.size() != 0){
-            //    ukrToEngStat = new TrainingStatement(1, Easy, ukrToEng, ukr_words, stat);
-            //    ukrToEng = ukrToEngStat.start();
-
-            //    engToUkrStat = new TrainingStatement(1, Easy, engToUkr, eng_words, stat);
-            //    engToUkr = engToUkrStat.start();
-            //}
 
             history.saveDailyScore(stat);
             return false;

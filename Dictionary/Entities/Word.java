@@ -14,7 +14,7 @@ abstract public class Word {
     }
 
     public String toString() {
-        return word + ", " + score + ", " + partOfSpeech.name();
+        return word;
     }
 
     public boolean equals(Object o) {
