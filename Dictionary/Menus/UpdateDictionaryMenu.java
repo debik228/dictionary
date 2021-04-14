@@ -1,16 +1,17 @@
 package Dictionary.Menus;
 
 import Dictionary.Common;
-import Dictionary.Tables;
+import Dictionary.Tables.RegexTables;
+import Dictionary.Tables.WordTables;
 import Dictionary.Update;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
 
-import static Dictionary.Tables.*;
+import static Dictionary.Tables.WordTables.*;
+import static Dictionary.Tables.RegexTables.*;
 
 public enum UpdateDictionaryMenu implements AbstractMenu {
     AddWords{
@@ -37,24 +38,26 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
     },
     DefinePoS {
         public boolean action(Statement stat)throws SQLException {
-            System.out.println("Which table you want first?\n1. ukr_words\n2. eng_words");
+            var ukrWordList = Common.loadWordList(stat, ukr_words, "pos = 'Unknown' ORDER BY last_upd DESC");
+            var engWordList = Common.loadWordList(stat, eng_words, "pos = 'Unknown' ORDER BY last_upd DESC");
+            System.out.format("There is %d words with undefined PoS in ukr_words and %d in eng_words.\nWhich table you want first?\n1. ukr_words\n2. eng_words\n", ukrWordList.size(), engWordList.size());
             var response = new Scanner(System.in).nextLine();
             if(response.charAt(0) == '1') {
-                Update.definePoS(stat, ukr_words);
-                Update.definePoS(stat, eng_words);
+                Update.definePoS(stat, ukrWordList);
+                Update.definePoS(stat, engWordList);
             }
             else{
-                Update.definePoS(stat, eng_words);
-                Update.definePoS(stat, ukr_words);
+                Update.definePoS(stat, engWordList);
+                Update.definePoS(stat, ukrWordList);
             }
             return false;
         }
         public String toString() { return "Define part of speech"; }
     },
     AddRegex{
-        public boolean action(Statement stat)throws IOException, SQLException {
-            Tables loadingWordTable = null;
-            Tables loadingRegexTable = null;
+        public boolean action(Statement stat)throws SQLException {
+            WordTables loadingWordTable = null;
+            RegexTables loadingRegexTable = null;
             String answer;
             var in = new Scanner(System.in, StandardCharsets.UTF_8);
             do {
@@ -68,8 +71,9 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                     loadingWordTable = eng_words;
                     loadingRegexTable= eng_regex;
                 }
+                else System.out.println("Unknown answer");
             }while(loadingWordTable == null);
-            var words = Common.loadWordTable(stat, loadingWordTable);
+            var words = Common.loadWordMap(stat, loadingWordTable);
             var regexes = Common.loadRegexTable(stat, loadingRegexTable);
             System.out.println("For which word do you want to define regex. Type back to return");
             for(var id:words.keySet())
@@ -90,7 +94,7 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                                 }
                         var currRegex = regexes.get(id);
                         if (currRegex != null)
-                            System.out.println("Regex for " + words.get(id).word + " word already exists: '" + currRegex + "'. It will be replaced with new regex with you input.");
+                            System.out.println("Regex for " + words.get(id).word + " word already exists: '" + currRegex + "'. New regex will replace existing.");
                         else
                             System.out.println("Print a regex for " + words.get(id).word);
                         var newRegex = in.nextLine();

@@ -4,10 +4,13 @@ import Dictionary.Entities.EngWord;
 import Dictionary.Entities.Translation;
 import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Word;
+import Dictionary.Tables.Tables;
+import Dictionary.Tables.WordTables;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Scanner;
 
 public class Update {
@@ -52,70 +55,71 @@ public class Update {
         statement.executeUpdate(query.toString());
     }
 
-    public static void updateWord(Connection conn, int id, Word word)throws SQLException{
+    public static <T extends Word> void updateWord(Connection conn, T newWord, T oldWord)throws SQLException{
         var stat = conn.createStatement();
-        var sql = String.format("UPDATE %s SET word='%s', score=%s, pos='%s' WHERE id = %d", (word instanceof EngWord)?"eng_words":"ukr_words", word.word.replaceAll("'", "''"), word.score, word.partOfSpeech.name(), id);
+        var sql = String.format("UPDATE %s SET word='%s', score=%s, pos='%s' WHERE word='%s'",
+                (newWord instanceof EngWord)?"eng_words":"ukr_words", newWord.word.replaceAll("'", "''"), newWord.score, newWord.partOfSpeech.name(), oldWord.word);
         stat.executeUpdate(sql);
         stat.close();
     }
 
-    //TODO переробити для одного слова
-    public static void definePoS(Statement stat, Tables table)throws SQLException{
-        if(table!= Tables.eng_words && table!=Tables.ukr_words)
-            throw new IllegalArgumentException();
-        var wordTable = Common.loadWordTable(stat, table, "pos = 'Unknown' ORDER BY last_upd DESC");
-        String answer = null;
+    public static void definePoS(Statement stat, List<? extends Word> wordList)throws SQLException{
+        WordTables table = wordList.get(0).getClass()==UkrWord.class?WordTables.ukr_words:WordTables.eng_words;
         var in = new Scanner(System.in);
         var parts = Word.PoS.class.getEnumConstants();
 
-        for(var key: wordTable.keySet()){
-            var word = wordTable.get(key);
-            System.out.println(word.word.substring(0,1).toUpperCase() + word.word.substring(1) + " is a");
-            for(int i = 0; i < 10; i++)
-                System.out.println("\t(" + ((i+1)%10) + ")" + parts[i]);
-            System.out.println("\t(i)Idiom");
-            System.out.println("\t(u)Unknown");
-            System.out.println("\t(q)Quit");
-            answer = in.nextLine().toLowerCase();
-            Word.PoS newPoS = null;
-            String newWord = word.word;
-            if(answer.matches("[1-9]"))
-                newPoS = parts[Integer.parseInt(answer) - 1];
-            else if(answer.matches("0"))
-                newPoS = Word.PoS.PhrasalVerb;
-            else{
-                if(answer.matches("qu?i?t?.*"))                         break;
-                else if(answer.matches("no?u?n?.*"))                    newPoS = Word.PoS.Noun;
-                else if(answer.matches("ve?r?b?.*"))                    newPoS = Word.PoS.Verb;
-                else if(answer.matches("adje?c?t?i?v?e?.*"))            newPoS = Word.PoS.Adjective;
-                else if(answer.matches("adve?r?b?.*"))                  newPoS = Word.PoS.Adverb;
-                else if(answer.matches("pron?o?u?n?.*"))                newPoS = Word.PoS.Pronoun;
-                else if(answer.matches("prep?o?s?i?t?i?o?n?.*"))        newPoS = Word.PoS.Preposition;
-                else if(answer.matches("co?n?j?u?n?c?t?i?o?n?.*"))      newPoS = Word.PoS.Conjunction;
-                else if(answer.matches("int?e?r?j?e?c?t?i?o?n?.*"))     newPoS = Word.PoS.Interjection;
-                else if(answer.matches("art?i?c?l?e?.*"))               newPoS = Word.PoS.Article;
-                else if(answer.matches("phr?a?s?a?l? *v?e?r?b?.*"))     newPoS = Word.PoS.PhrasalVerb;
-                else if(answer.matches("id?i?o?m?.*"))                  newPoS = Word.PoS.Idiom;
-                else if(answer.matches("un?k?n?o?w?n?.*"))              newPoS = Word.PoS.Unknown;
-                else{
-                    System.out.println("Unknown answer.");
-                    newPoS = Word.PoS.Unknown;
-                }
-            }
-            if(newPoS == Word.PoS.Verb && table == Tables.eng_words) {
+        for(var word: wordList){
+            System.out.println(firstCharacterToUpperCase(word.word) + " is a");
+            printResponseVariants(parts);
+            var response = in.nextLine().toLowerCase();
+            var newPoS = parseUserResponse(response, parts);
+            if(newPoS == null)break;
+            var newWordValue = word.word;
+            if(newPoS == Word.PoS.Verb && table == WordTables.eng_words) {
                 System.out.println("Add \"to\" part? y/n");
                 if(in.nextLine().toLowerCase().startsWith("y"))
-                    newWord = "to " + newWord;
+                    newWordValue = "to " + newWordValue;
             }
-            Word updatedWord = null;
-            if(table == Tables.eng_words)updatedWord = new EngWord(newWord, word.score, newPoS, word.regex);
-            else                         updatedWord = new UkrWord(newWord, word.score, newPoS, word.regex);
-            updateWord(stat.getConnection(), key, updatedWord);
+            Word newWord = null;
+            if(table == WordTables.eng_words)newWord = new EngWord(newWordValue, word.score, newPoS, word.regex);
+            else                             newWord = new UkrWord(newWordValue, word.score, newPoS, word.regex);
+            updateWord(stat.getConnection(), newWord, word);
+        }
+    }
+    private static String firstCharacterToUpperCase(String str){
+        return str.substring(0,1).toUpperCase() + str.substring(1);
+    }
+    private static void printResponseVariants(Word.PoS[] parts){
+        for(int i = 0; i < 10; i++)
+            System.out.println("\t(" + ((i+1)%10) + ")" + parts[i]);
+        System.out.println("\t(i)Idiom");
+        System.out.println("\t(u)Unknown");
+        System.out.println("\t(q)Quit");
+    }
+    private static Word.PoS parseUserResponse(String response, Word.PoS[] parts){
+        if(response.matches("[1-9]"))                                 return parts[Integer.parseInt(response) - 1];
+        else if(response.matches("0"))                                return Word.PoS.PhrasalVerb;
+        else{
+            if(response.matches("qu?i?t?.*"))                         return null;
+            else if(response.matches("no?u?n?.*"))                    return Word.PoS.Noun;
+            else if(response.matches("ve?r?b?.*"))                    return Word.PoS.Verb;
+            else if(response.matches("adje?c?t?i?v?e?.*"))            return Word.PoS.Adjective;
+            else if(response.matches("adve?r?b?.*"))                  return Word.PoS.Adverb;
+            else if(response.matches("pron?o?u?n?.*"))                return Word.PoS.Pronoun;
+            else if(response.matches("prep?o?s?i?t?i?o?n?.*"))        return Word.PoS.Preposition;
+            else if(response.matches("co?n?j?u?n?c?t?i?o?n?.*"))      return Word.PoS.Conjunction;
+            else if(response.matches("int?e?r?j?e?c?t?i?o?n?.*"))     return Word.PoS.Interjection;
+            else if(response.matches("art?i?c?l?e?.*"))               return Word.PoS.Article;
+            else if(response.matches("phr?a?s?a?l? *v?e?r?b?.*"))     return Word.PoS.PhrasalVerb;
+            else if(response.matches("id?i?o?m?.*"))                  return Word.PoS.Idiom;
+            else if(response.matches("un?k?n?o?w?n?.*"))              return Word.PoS.Unknown;
+            else{ System.out.println("Unknown answer.");                    return Word.PoS.Unknown;
+            }
         }
     }
 
     public static void defineRegex(Statement stat, int wordID, String regex)throws SQLException{
-        var regexTable = regex.matches(".*[A-Za-z]*.*") ? Tables.eng_regex:Tables.ukr_words;
+        var regexTable = regex.matches(".*[A-Za-z]+.*") ? Tables.eng_regex:Tables.ukr_regex;
         if(Common.contains(stat, regexTable, "word_id = " + wordID))
             stat.executeUpdate(String.format("UPDATE %s SET regex = '%s' WHERE word_id = %d", regexTable, regex.replaceAll("'", "''"), wordID));
         else

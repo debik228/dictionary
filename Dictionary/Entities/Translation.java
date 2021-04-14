@@ -6,7 +6,7 @@ import java.util.*;
 import Dictionary.ConfigFile;
 import Dictionary.Common;
 import Dictionary.Program;
-import Dictionary.Tables;
+import Dictionary.Tables.WordTables;
 
 public class Translation {
     private final int ukr_id;
@@ -38,8 +38,8 @@ public class Translation {
         }catch (SQLException e){
             throw new RuntimeException("SQL exception was occurred. Query: " + query, e);
         }
-        HashMap<Integer, Word> ukrWords = Common.loadWordTable(stat.getConnection().createStatement(), Tables.ukr_words), //TODO їба висрав stat.getConnection().createStatement()
-                               engWords = Common.loadWordTable(stat.getConnection().createStatement(), Tables.eng_words);
+        HashMap<Integer, Word> ukrWords = Common.loadWordMap(stat.getConnection().createStatement(), WordTables.ukr_words), //TODO їба висрав stat.getConnection().createStatement()
+                               engWords = Common.loadWordMap(stat.getConnection().createStatement(), WordTables.eng_words);
         while(queryRes.next()){
             int ukr_id = queryRes.getInt("ukr_id");
             int eng_id = queryRes.getInt("eng_id");
@@ -81,7 +81,7 @@ public class Translation {
         return (int)Math.round(qRes.getDouble(1));
     }
 
-    public Word getWord(Tables from){
+    public Word getWord(WordTables from){
         switch (from){
             case ukr_words:return getUkrWord();
             case eng_words:return getEngWord();
@@ -90,12 +90,12 @@ public class Translation {
     }
     private UkrWord getUkrWord() {
         return ukrWord;
-    }//TODO make this and next methods open
+    }
     private EngWord getEngWord() {
         return engWord;
     }
 
-    public int getWordId(Tables from){
+    public int getWordId(WordTables from){
         switch (from){
             case ukr_words:return getUkrId();
             case eng_words:return getEngId();
