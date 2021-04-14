@@ -7,6 +7,10 @@ public class RandomDistributor {
     private double ratio;
     private Random rand;
 
+    /**
+     * @param ratio Probability that an element of an inputList will be included in outputList1
+     * @param rand Pseudorandom number generator which be used for distribution elements of an inputList between two output lists
+     */
     public RandomDistributor(double ratio, Random rand) {
         this.rand = rand;
         this.ratio = ratio;
@@ -25,7 +29,7 @@ public class RandomDistributor {
         for (int i = 0; i < initTranslationsSize; i++) {
             var curr = inputList.get(rand.nextInt(inputList.size()));
             inputList.remove(curr);
-            if (rand.nextDouble() > getRatio())     outputList1.add(curr);
+            if (getRatio() > rand.nextDouble())     outputList1.add(curr);
             else                                    outputList2.add(curr);
         }
     }

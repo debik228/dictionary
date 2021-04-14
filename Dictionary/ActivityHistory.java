@@ -9,7 +9,7 @@ import java.util.HashMap;
 public class ActivityHistory {
     public HashMap<Date, Integer> history;
     private int dailyScore;
-    private final boolean newNotation;
+    private boolean newNotation;
     private final Date today;
 
     public ActivityHistory(Statement stat) throws SQLException {
@@ -44,6 +44,7 @@ public class ActivityHistory {
         if(newNotation) {
             sql = String.format("INSERT INTO activity_history (score) VALUES (%d);", dailyScore);
             stat.execute(sql);
+            newNotation = false;
         }
         else{
             sql = String.format("UPDATE activity_history SET score = %d WHERE day = '%d-%d-%d';", dailyScore, 1900 + today.getYear(), today.getMonth() + 1, today.getDate());

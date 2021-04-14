@@ -1,13 +1,16 @@
 package Dictionary;
 
-import Dictionary.Entities.EngWord;
-import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Word;
+import Dictionary.Tables.RegexTables;
+import Dictionary.Tables.Tables;
+import Dictionary.Tables.WordTables;
 
 import java.io.IOException;
 import java.sql.*;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Common {
     public static int getSequanceCurrval(Statement statement, String seqName) throws SQLException{
@@ -37,8 +40,7 @@ public class Common {
         return queryRes.next();
     }
 
-    public static HashMap<Integer, String> loadRegexTable(Statement stmt, Tables table) throws SQLException{
-        if(table != Tables.ukr_regex && table != Tables.eng_regex) throw new IllegalArgumentException();
+    public static HashMap<Integer, String> loadRegexTable(Statement stmt, RegexTables table) throws SQLException{
         var res = new HashMap<Integer, String>();
         var sql = "SELECT word_id, regex FROM " + table;
         var queryRes = stmt.executeQuery(sql);
@@ -47,30 +49,53 @@ public class Common {
         return res;
     }
 
-    public static HashMap<Integer, Word> loadWordTable(Statement stmt, Tables table, String Condition)throws SQLException{
-        if(table != Tables.eng_words && table != Tables.ukr_words) throw new IllegalArgumentException(table.toString() + " isn't a word table");
-        var regexes = loadRegexTable(stmt, (table == Tables.ukr_words)?Tables.ukr_regex:Tables.eng_regex);
+    public static HashMap<Integer, Word> loadWordMap(Statement stmt, WordTables table)throws SQLException{
+        return loadWordMap(stmt, table, null);
+    }
+    public static HashMap<Integer, Word> loadWordMap(Statement stmt, WordTables table, String condition)throws SQLException{
+        var regexes = loadRegexTable(stmt, (table == WordTables.ukr_words)?RegexTables.ukr_regex:RegexTables.eng_regex);
+        var queryRes = getResultSet(stmt, table, condition);
         var res = new HashMap<Integer, Word>();
-        var wordClass = table == Tables.ukr_words? UkrWord.class : EngWord.class;
-        var query = "SELECT id, word, score, pos FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
-        var queryRes = stmt.executeQuery(query);
         while(queryRes.next()){
+            var word = getNextWord(queryRes, table, regexes);
             var id = queryRes.getInt("id");
-            var word = queryRes.getString("word");
-            var score = queryRes.getInt("score");
-            var pos = Word.PoS.getConstant((String)queryRes.getObject("pos"));
-            var regex = regexes.get(id); if(regex == null) regex = word;
-            try {
-                res.put(id, wordClass.getConstructor(String.class, int.class, Word.PoS.class, String.class).newInstance(word, score, pos, regex));
-            }catch (Exception e){throw new RuntimeException(e);}
+            res.put(id, word);
+        }
+        queryRes.close();
+        return res;
+    }
+    private static ResultSet getResultSet(Statement stmt, WordTables table, String Condition) throws SQLException{
+        var query = "SELECT id, word, score, pos FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
+        return stmt.executeQuery(query);
+    }
+    private static Word getNextWord(ResultSet queryRes, WordTables table, HashMap<Integer, String> regexes)throws SQLException{
+        var id = queryRes.getInt("id");
+        var word = queryRes.getString("word");
+        var score = queryRes.getInt("score");
+        var pos = Word.PoS.getConstant((String)queryRes.getObject("pos"));
+        var regex = regexes.get(id); if(regex == null) regex = word;
+        try {
+            var wordConstructor = table.getAppropriateClass().getConstructor(String.class, int.class, Word.PoS.class, String.class);
+            return wordConstructor.newInstance(word, score, pos, regex);
+        }catch (Exception e){throw new RuntimeException(e);}
+    }
+
+    public static List<Word> loadWordList(Statement stmt, WordTables table)throws SQLException{
+        return loadWordList(stmt, table, "");
+    }
+    public static List<Word> loadWordList(Statement stmt, WordTables table, String condition)throws SQLException{
+        var regexes = loadRegexTable(stmt, (table == WordTables.ukr_words)?RegexTables.ukr_regex:RegexTables.eng_regex);
+        var queryRes = getResultSet(stmt, table, condition);
+        var res = new LinkedList<Word>();
+        while(queryRes.next()){
+            var word = getNextWord(queryRes, table, regexes);
+            res.add(word);
         }
         queryRes.close();
         return res;
     }
 
-    public static HashMap<Integer, Word> loadWordTable(Statement stmt, Tables table)throws SQLException{
-        return loadWordTable(stmt, table, null);
-    }
+
 
     public static boolean isToday(String dateStr){
         var lastTrainingDate = dateStr.split("-");

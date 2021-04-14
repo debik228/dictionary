@@ -4,6 +4,7 @@ import Dictionary.Entities.EngWord;
 import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Translation;
 import Dictionary.Entities.Word;
+import Dictionary.Tables.WordTables;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -20,12 +21,12 @@ public class TrainingStatement {
 
     private final Difficulty difficulty;
     private final List<Translation> translations;
-    private final Tables translatingFrom;
+    private final WordTables translatingFrom;
 
     private int questionsTot;
     private int questionsNum = 1;
 
-    public TrainingStatement(Difficulty difficulty, List<Translation> translations, Tables translatingFrom){
+    public TrainingStatement(Difficulty difficulty, List<Translation> translations, WordTables translatingFrom){
         this.difficulty = difficulty;
         this.translations = translations;
         this.translatingFrom = translatingFrom;
@@ -43,7 +44,7 @@ public class TrainingStatement {
             askForTranslation(currTrans);
             HashSet<String> response = getResponse();
             List<Translation> translationVariants = Translation.loadTranslations(stmt,
-                    (translatingFrom == Tables.ukr_words ?"ukr_id = ":"eng_id = ") + currTrans.getWordId(translatingFrom));
+                    (translatingFrom == WordTables.ukr_words ?"ukr_id = ":"eng_id = ") + currTrans.getWordId(translatingFrom));
 
             var checkingResult = checkResponse(response, translationVariants, translatingFrom);
             LinkedList<Translation>  rightResponses       = checkingResult.getRightResponses();
@@ -76,7 +77,7 @@ public class TrainingStatement {
         return response;
     }
 
-    private QuestionResults checkResponse(HashSet<String> responses, List<Translation> translationsVariants, Tables translatingFrom){
+    private QuestionResults checkResponse(HashSet<String> responses, List<Translation> translationsVariants, WordTables translatingFrom){
         var rightResponses = new LinkedList<Translation>();
         var wrongResponses = new LinkedList<String>();
         var nonUsedTranslations = new LinkedList<>(translationsVariants);
@@ -85,7 +86,7 @@ public class TrainingStatement {
         for(String response : responses){
             var wrong = true;
             for(var currTransVariant : translationsVariants) {
-                Tables translatingTo = Tables.getOppositeTo(translatingFrom);
+                WordTables translatingTo = translatingFrom.getOpposite();
                 Word checkedScope = currTransVariant.getWord(translatingTo);
                 String modified = modifyString(difficulty, checkedScope);
                 if(response.matches(modified)){
@@ -213,8 +214,8 @@ public class TrainingStatement {
             Translation.updTranslations(stmt, rightResponses);
         }
 
-        public void printResults(List<Translation> translationVariants, Tables translatingFrom){
-            var translatingTo = Tables.getOppositeTo(translatingFrom);
+        public void printResults(List<Translation> translationVariants, WordTables translatingFrom){
+            var translatingTo = translatingFrom.getOpposite();
             if(rightResponses.isEmpty()){
                 printPossibleTranslations(translationVariants, translatingTo);
             }
@@ -225,7 +226,7 @@ public class TrainingStatement {
                 printUnusedTranslations(translatingTo);
             }
         }
-        private void printPossibleTranslations(List<Translation> translationVariants, Tables translatingTo){
+        private void printPossibleTranslations(List<Translation> translationVariants, WordTables translatingTo){
             System.out.print(RED_TEXT + "Неправильно!" + RESET
                     + "\nМожна перекласти як: ");
             for(var trans : translationVariants)
@@ -250,7 +251,7 @@ public class TrainingStatement {
             for(var str : wrongResponses)
                 System.out.print(str + ", ");
         }
-        private void printUnusedTranslations(Tables translatingTo){
+        private void printUnusedTranslations(WordTables translatingTo){
             if(!nonUsedTranslations.isEmpty()) {
                 System.out.print(BLUE_TEXT + "\nТакож можна перекласти як: " + RESET);
                 for(int i = 0; i < nonUsedTranslations.size(); i++) {
