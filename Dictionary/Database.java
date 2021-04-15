@@ -116,7 +116,7 @@ public class Database {
         stat.close();
         conn.close();
 
-        conn = DriverManager.getConnection("jdbc:postgresql:dictionary", username, password);
+        conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
         stat = conn.createStatement();
 
         stat.executeUpdate(createPoS);
@@ -133,7 +133,7 @@ public class Database {
         Connection conn = null;
         try{
             Class.forName("org.postgresql.Driver").getConstructor().newInstance();
-            conn = DriverManager.getConnection("jdbc:postgresql:dictionary", username, password);
+            conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
         }catch (org.postgresql.util.PSQLException e){
             //TODO винести цю хуйню в окремий метод
             System.err.println("Wrong username or password. Please input correct username and password");
@@ -143,7 +143,7 @@ public class Database {
         catch (SQLException e){
             try {
                 initDB();
-                conn = DriverManager.getConnection("jdbc:postgresql:dictionary", username, password);
+                conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
             }catch (SQLException sqlException){throw new RuntimeException(sqlException);}
         }catch (ReflectiveOperationException e){throw new RuntimeException(e);}
         return conn;
