@@ -1,11 +1,14 @@
-package Dictionary;
+package Dictionary.Update;
 
+import Dictionary.Common;
 import Dictionary.Entities.EngWord;
 import Dictionary.Entities.Translation;
 import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Word;
 import Dictionary.Tables.Tables;
 import Dictionary.Tables.WordTables;
+import Dictionary.Update.Insert.TranslateInsertion;
+import Dictionary.Update.Insert.WordInsertion;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -15,45 +18,16 @@ import java.util.Scanner;
 
 public class Update {
     public static void addWords(Statement statement, String[] ukr, String[] eng) throws SQLException{
-        int initScore = Math.min(Translation.getAvgScore(statement), 0);
-        var query = new StringBuilder("BEGIN;\nINSERT INTO ukr_words (word) VALUES ");
+        var ukrInsertion = new WordInsertion(statement, ukr, WordTables.ukr_words);
+        System.out.print(ukrInsertion.getQueryText());
 
-        //first query(ukr_words)
-        for (var uWord : ukr)
-            if(!Common.contains(statement, Tables.ukr_words, "word = '" + uWord + "'"))
-                query.append("('" + uWord + "'), ");
-        query.setLength(query.length() - 2);
-        query.append(";\n");
-        if(query.length() == "BEGIN;\nINSERT INTO ukr_words (word) VALUES ".length())query.setLength(7);                //if no one ukrainian word can be added clear query
+        var engInsertion = new WordInsertion(statement, eng, WordTables.eng_words);
+        System.out.print(engInsertion.getQueryText());
 
-        //second query(eng_words)
-        query.append("INSERT INTO eng_words (word) VALUES ");
-        for (var eWord : eng)
-            if(!Common.contains(statement, Tables.eng_words, "word = '" + eWord + "'"))
-                query.append("('" + eWord + "'), ");
-        query.setLength(query.length() - 2);
-        if(query.toString().endsWith("INSERT INTO eng_words (word) VALUE"))query.setLength(query.length() - "INSERT INTO eng_words (word) VALUE".length());
-
-        //executing first and second query
-        System.out.println(query);
-        statement.executeUpdate(query.toString());
-
-        //last query(mtm connections)
-        query = new StringBuilder("INSERT INTO translation (ukr_id, eng_id, score) VALUES ");
-        for(var uWord : ukr){
-            int uId = Common.getId(statement, Tables.ukr_words, uWord);
-            for(var eWord : eng){
-                int eId = Common.getId(statement, Tables.eng_words, eWord);
-                query.append(String.format("(%d, %d, %d), ", uId, eId, initScore));
-            }
-        }
-        query.setLength(query.length() - 2);
-        query.append(";\nCOMMIT;");
-
-        //executing last query
-        System.out.println(query);
-        statement.executeUpdate(query.toString());
+        var translInsertion = new TranslateInsertion(statement, ukrInsertion, engInsertion);
+        System.out.println(translInsertion.getQueryText());
     }
+
 
     public static <T extends Word> void updateWord(Connection conn, T newWord, T oldWord)throws SQLException{
         var stat = conn.createStatement();

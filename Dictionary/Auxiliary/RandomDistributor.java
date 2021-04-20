@@ -29,7 +29,7 @@ public class RandomDistributor {
         for (int i = 0; i < initTranslationsSize; i++) {
             var curr = inputList.get(rand.nextInt(inputList.size()));
             inputList.remove(curr);
-            if (getRatio() > rand.nextDouble())     outputList1.add(curr);
+            if (getRatio() < rand.nextDouble())     outputList1.add(curr);
             else                                    outputList2.add(curr);
         }
     }

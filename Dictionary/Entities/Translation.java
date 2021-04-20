@@ -74,11 +74,11 @@ public class Translation {
                 today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR));
     }
 
-    public static int getAvgScore(Statement stat) throws SQLException{
-        var sql = "SELECT avg(score) FROM translation";
+    public static int getMinScore(Statement stat) throws SQLException{
+        var sql = "SELECT min(score) FROM translation";
         var qRes = stat.executeQuery(sql);
         qRes.next();
-        return (int)Math.round(qRes.getDouble(1));
+        return qRes.getInt(1);
     }
 
     public Word getWord(WordTables from){

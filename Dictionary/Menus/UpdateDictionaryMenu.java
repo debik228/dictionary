@@ -3,7 +3,7 @@ package Dictionary.Menus;
 import Dictionary.Common;
 import Dictionary.Tables.RegexTables;
 import Dictionary.Tables.WordTables;
-import Dictionary.Update;
+import Dictionary.Update.Update;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -26,7 +26,7 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                     var ukr = wordRoster[0].split(", *");
                     var eng = wordRoster[1].split(", *");
 
-                    for(int i = 0; i < ukr.length; i++) ukr[i] = ukr[i].replaceAll("'", "''");
+                    for(int i = 0; i < ukr.length; i++) ukr[i] = ukr[i].replaceAll("'", "''");//TODO: зробити таку заміну у всіх запитах до бд
                     for(int i = 0; i < eng.length; i++) eng[i] = eng[i].replaceAll("'", "''");
 
                     Update.addWords(stat, ukr, eng);

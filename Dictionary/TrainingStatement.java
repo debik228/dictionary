@@ -105,7 +105,7 @@ public class TrainingStatement {
     }
 
     public static String modifyString(Difficulty difficulty, Word checkedScope){
-        var str = checkedScope.regex.toLowerCase();
+        var str = checkedScope.regex;//.toLowerCase();
         var res = str;//str is an original word. Please don't modify it.
         var sb = new StringBuilder();
         String regex;
@@ -115,7 +115,9 @@ public class TrainingStatement {
         //unnecessary 'to' before verbs
         if(checkedScope.getClass() == EngWord.class && checkedScope.partOfSpeech == Word.PoS.Verb) {
             if (str.startsWith("to "))
-                res = res.replaceAll("to ", "(to )?");
+                res = res.replaceFirst("to ", "(to )?");
+            else
+                res = "(to )?" + res;
             //res = res.substring(res.indexOf(str.charAt("to ".length()))); //doesnt word with words which starts with 'o' (e.g. to offer)
             //res = "(to )?" + res;
         }

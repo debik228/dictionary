@@ -19,7 +19,7 @@ public enum MainMenuSelections implements AbstractMenu{
             List<Translation>
                     ukrToEng = new LinkedList<>(),
                     engToUkr = new LinkedList<>();
-            var dist = new RandomDistributor(0.6, new Random());
+            var dist = new RandomDistributor(0.3, new Random());
             dist.distribute(Translation.loadTranslations(stat, "score <= (SELECT avg(score) FROM dictionary)"), ukrToEng, engToUkr);
 
             var engToUkrStat = new TrainingStatement(Hard, engToUkr, eng_words);
@@ -34,7 +34,7 @@ public enum MainMenuSelections implements AbstractMenu{
             ukrToEngStat = new TrainingStatement(Medium, ukrToEng, ukr_words);
             ukrToEng = ukrToEngStat.start();
 
-            while(ukrToEng.size() != 0 && engToUkr.size() != 0){
+            while(ukrToEng.size() != 0 || engToUkr.size() != 0){
                 engToUkrStat = new TrainingStatement(Easy, engToUkr, eng_words);
                 engToUkr = engToUkrStat.start();
 
