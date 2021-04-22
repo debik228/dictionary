@@ -5,6 +5,7 @@ import Dictionary.Entities.EngWord;
 import Dictionary.Entities.Translation;
 import Dictionary.Entities.UkrWord;
 import Dictionary.Entities.Word;
+import Dictionary.Program;
 import Dictionary.Tables.Tables;
 import Dictionary.Tables.WordTables;
 import Dictionary.Update.Insert.TranslateInsertion;
@@ -17,14 +18,14 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Update {
-    public static void addWords(Statement statement, String[] ukr, String[] eng) throws SQLException{
-        var ukrInsertion = new WordInsertion(statement, ukr, WordTables.ukr_words);
+    public static void addWords(String[] ukr, String[] eng) throws SQLException{
+        var ukrInsertion = new WordInsertion(ukr, WordTables.ukr_words);
         System.out.print(ukrInsertion.getQueryText());
 
-        var engInsertion = new WordInsertion(statement, eng, WordTables.eng_words);
+        var engInsertion = new WordInsertion(eng, WordTables.eng_words);
         System.out.print(engInsertion.getQueryText());
 
-        var translInsertion = new TranslateInsertion(statement, ukrInsertion, engInsertion);
+        var translInsertion = new TranslateInsertion(ukrInsertion, engInsertion);
         System.out.println(translInsertion.getQueryText());
     }
 
@@ -92,9 +93,10 @@ public class Update {
         }
     }
 
-    public static void defineRegex(Statement stat, int wordID, String regex)throws SQLException{
+    public static void defineRegex(int wordID, String regex)throws SQLException{
         var regexTable = regex.matches(".*[A-Za-z]+.*") ? Tables.eng_regex:Tables.ukr_regex;
-        if(Common.contains(stat, regexTable, "word_id = " + wordID))
+        var stat = Program.dictionary.getStatement();
+        if(Common.contains(regexTable, "word_id = " + wordID))
             stat.executeUpdate(String.format("UPDATE %s SET regex = '%s' WHERE word_id = %d", regexTable, regex.replaceAll("'", "''"), wordID));
         else
             stat.execute(String.format("INSERT INTO %s (word_id, regex) VALUES (%d, '%s')", regexTable, wordID, regex.replaceAll("'", "''")));

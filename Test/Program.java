@@ -27,6 +27,6 @@ public class Program {
         //dialog
         System.out.println("Hi there!\nYour last training was on " + ConfigFile.getParam(CFG_PATH, "last_upd"));
         var in = new BufferedReader(new InputStreamReader(System.in));
-        MenuHandler.handle(MainMenuSelections.class, conn);
+        MenuHandler.handle(MainMenuSelections.class);
     }
 }

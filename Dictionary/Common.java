@@ -21,17 +21,20 @@ public class Common {
         return queryRes.getInt(1);
     }
 
-    public static int getId(Statement stat, WordTables table, String word){
+    public static int getId(WordTables table, String word){
+        var stat = Program.dictionary.getStatement();
         int res = -1;
         try{
             var query = String.format("SELECT id FROM %s WHERE word = '%s'", table.toString(), word);
             var queryRes = stat.executeQuery(query);
             queryRes.next();
             res = queryRes.getInt("id");
+            stat.close();
             return res;
         }catch (PSQLException e){
             //this means that queryRes is empty (no tuple with such id)
-            if(e.getMessage() == "ResultSet not positioned properly, perhaps you need to call next.");
+            if(e.getMessage() == "ResultSet not positioned properly, perhaps you need to call next."){}
+            else throw new RuntimeException(e);
         }
         catch (Exception e){
             throw new RuntimeException(e);
@@ -40,38 +43,42 @@ public class Common {
     }
 
     @Deprecated
-    public static boolean contains (Statement stat, Tables table, String condition)throws SQLException{
+    public static boolean contains (Tables table, String condition)throws SQLException{
+        var stat = Program.dictionary.getStatement();
         var query = String.format("SELECT * FROM %s WHERE %s", table, condition);
         var queryRes = stat.executeQuery(query);
+        stat.close();
         return queryRes.next();
     }
 
-    public static int getSuitableWordId(Statement stat, WordTables table, String word)throws SQLException{
+    public static int getSuitableWordId(WordTables table, String word)throws SQLException{
         int searchingWordId = -1;
-        searchingWordId = seekOutActuallyWord(stat, table, word);
+        searchingWordId = seekOutActuallyWord(table, word);
         if(searchingWordId == -1)
-            searchingWordId = seekOutRegex(stat, table, word);
+            searchingWordId = seekOutRegex(table, word);
         if(searchingWordId == -1)
-            searchingWordId = seekOutModifiedRegex(stat, table, word);
+            searchingWordId = seekOutModifiedRegex(table, word);
         return searchingWordId;
     }
-    private static int seekOutActuallyWord(Statement stat, WordTables table, String word)throws SQLException{
+    private static int seekOutActuallyWord(WordTables table, String word)throws SQLException{
+        var stat = Program.dictionary.getStatement();
         int searchingWordId = -1;
         var query = String.format("SELECT * FROM %s WHERE word = '%s'", table, word);
         var queryRes = stat.executeQuery(query);
         if(queryRes.next())
             searchingWordId = queryRes.getInt("id");
+        stat.close();
         return searchingWordId;
     }
-    private static int seekOutRegex(Statement stat, WordTables table, String word)throws SQLException{
-        var regexMap = loadRegexTable(stat, table.getAppropriateRegexTable());
+    private static int seekOutRegex(WordTables table, String word)throws SQLException{
+        var regexMap = loadRegexTable(table.getAppropriateRegexTable());
         for(var currId : regexMap.keySet())
             if(word.matches(regexMap.get(currId)))
                 return currId;
         return -1;
     }
-    private static int seekOutModifiedRegex(Statement stat, WordTables table, String word)throws SQLException{
-        var wordMap = loadWordMap(stat, table);
+    private static int seekOutModifiedRegex(WordTables table, String word)throws SQLException{
+        var wordMap = loadWordMap(table);
         for(var currId : wordMap.keySet()) {
             Word w = wordMap.get(currId);
             if (word.matches(TrainingStatement.modifyString(Difficulty.Hard, w)))
@@ -80,11 +87,13 @@ public class Common {
         return -1;
     }
 
-    public static HashMap<Integer, Word> loadWordMap(Statement stmt, WordTables table)throws SQLException{
-        return loadWordMap(stmt, table, null);
+    public static HashMap<Integer, Word> loadWordMap(WordTables table)throws SQLException{
+        return loadWordMap(table, null);
     }
-    public static HashMap<Integer, Word> loadWordMap(Statement stmt, WordTables table, String condition)throws SQLException{
-        var regexes = loadRegexTable(stmt, (table == WordTables.ukr_words)?RegexTables.ukr_regex:RegexTables.eng_regex);
+    public static HashMap<Integer, Word> loadWordMap(WordTables table, String condition)throws SQLException{
+        var stmt = Program.dictionary.getStatement();
+        stmt.closeOnCompletion();
+        var regexes = loadRegexTable((table == WordTables.ukr_words)?RegexTables.ukr_regex:RegexTables.eng_regex);
         var queryRes = getResultSet(stmt, table, condition);
         var res = new HashMap<Integer, Word>();
         while(queryRes.next()){
@@ -111,11 +120,13 @@ public class Common {
         }catch (Exception e){throw new RuntimeException(e);}
     }
 
-    public static List<Word> loadWordList(Statement stmt, WordTables table)throws SQLException{
-        return loadWordList(stmt, table, "");
+    public static List<Word> loadWordList(WordTables table)throws SQLException{
+        return loadWordList(table, "");
     }
-    public static List<Word> loadWordList(Statement stmt, WordTables table, String condition)throws SQLException{
-        var regexes = loadRegexTable(stmt, (table == WordTables.ukr_words)?RegexTables.ukr_regex:RegexTables.eng_regex);
+    public static List<Word> loadWordList(WordTables table, String condition)throws SQLException{
+        var stmt = Program.dictionary.getStatement();
+        stmt.closeOnCompletion();
+        var regexes = loadRegexTable((table == WordTables.ukr_words)?RegexTables.ukr_regex:RegexTables.eng_regex);
         var queryRes = getResultSet(stmt, table, condition);
         var res = new LinkedList<Word>();
         while(queryRes.next()){
@@ -126,12 +137,14 @@ public class Common {
         return res;
     }
 
-    public static HashMap<Integer, String> loadRegexTable(Statement stmt, RegexTables table) throws SQLException{
+    public static HashMap<Integer, String> loadRegexTable(RegexTables table) throws SQLException{
+        var stmt = Program.dictionary.getStatement();
         var res = new HashMap<Integer, String>();
         var sql = "SELECT word_id, regex FROM " + table;
         var queryRes = stmt.executeQuery(sql);
         while (queryRes.next())
             res.put(queryRes.getInt("word_id"), queryRes.getString("regex"));
+        stmt.close();
         return res;
     }
 

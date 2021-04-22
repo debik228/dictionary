@@ -1,15 +1,12 @@
 package Dictionary.Update.Insert;
 
+import Dictionary.Program;
+
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public abstract class Insertion {
-    protected final Statement stat;
     private String queryText;
-
-    public Insertion(Statement stat){
-        this.stat = stat;
-    }
 
     protected abstract String formVALUESStatement() throws SQLException;
     protected abstract String formINSERTStatement();
@@ -24,6 +21,7 @@ public abstract class Insertion {
     }
     protected final void executeInsertion() throws SQLException{
         formQueryText();
+        var stat = Program.dictionary.getStatement();
         stat.executeUpdate(queryText);
     }
 

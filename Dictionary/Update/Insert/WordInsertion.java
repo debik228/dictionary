@@ -12,8 +12,7 @@ public class WordInsertion extends Insertion{
     public final boolean[] hasJustInserted;
     private final WordTables table;
 
-    public WordInsertion(Statement stat, String[] words, WordTables table)throws SQLException {
-        super(stat);
+    public WordInsertion(String[] words, WordTables table)throws SQLException {
         this.words = words;
         this.correspondingIds = new int[words.length];
         this.hasJustInserted = new boolean[words.length];
@@ -25,7 +24,7 @@ public class WordInsertion extends Insertion{
 
     private void fillInIdArray()throws SQLException{
         for(int i = 0; i < words.length; i++)
-            correspondingIds[i] = Common.getSuitableWordId(stat, table, words[i]);
+            correspondingIds[i] = Common.getSuitableWordId(table, words[i]);
     }
 
     protected String formVALUESStatement() {
@@ -52,7 +51,7 @@ public class WordInsertion extends Insertion{
     private void fillInStubs(){
         for (int i = 0; i < correspondingIds.length; i++) {
             if(hasCorrespondingId(i)) continue;
-            correspondingIds[i] = Common.getId(stat, table, words[i]);
+            correspondingIds[i] = Common.getId(table, words[i]);
             hasJustInserted[i] = true;
         }
     }

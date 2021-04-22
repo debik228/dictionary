@@ -12,11 +12,10 @@ public class TranslateInsertion extends Insertion{
     private final WordInsertion ukrInsertion;
     private final WordInsertion engInsertion;
 
-    public TranslateInsertion(Statement stat, WordInsertion ukrInsertion, WordInsertion engInsertion)throws SQLException {
-        super(stat);
+    public TranslateInsertion(WordInsertion ukrInsertion, WordInsertion engInsertion)throws SQLException {
         this.ukrInsertion = ukrInsertion;
         this.engInsertion = engInsertion;
-        this.initialScore = Math.min(Translation.getMinScore(stat), 0);
+        this.initialScore = Math.min(Translation.getMinScore(), 0);
         executeInsertion();
     }
 
@@ -27,7 +26,7 @@ public class TranslateInsertion extends Insertion{
                 if(ukrInsertion.hasJustInserted[ukrIndex] || engInsertion.hasJustInserted[engIndex])
                     VALUES.append(addNewPair(ukrIndex, engIndex));
                 else
-                if(!Common.contains(stat, Tables.translation,
+                if(!Common.contains(Tables.translation,
                         String.format("ukr_id=%d AND eng_id=%d",
                                 ukrInsertion.correspondingIds[ukrIndex],
                                 engInsertion.correspondingIds[engIndex])))

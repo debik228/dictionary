@@ -1,25 +1,21 @@
 package Dictionary;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Database {
     private final String dbName;
-    private final String username;
-    private final String password;
-    private final String cfgFilePath;
+    private final ConfigFile cfgFile;
+    private Connection conn;
 
     public Database(String dbName, ConfigFile cfgFile){
         this.dbName = dbName;
-        this.cfgFilePath = cfgFile.pathname;
-        this.username = cfgFile.params.get("username");
-        this.password = cfgFile.params.get("password");
+        this.cfgFile = cfgFile;
     }
 
-    public void initDB() throws SQLException{
-        var conn = DriverManager.getConnection("jdbc:postgresql:postgres", username, password);
+    public void initDB(){
         var creatingDB = "CREATE DATABASE "+ dbName +" WITH OWNER = postgres ENCODING = 'UTF8' CONNECTION LIMIT = -1;\n";
         var createPoS =
                 "CREATE TYPE public.pos AS ENUM (\n" +
@@ -111,41 +107,67 @@ public class Database {
                 "    word_id integer NOT NULL,\n" +
                 "    regex character varying(240) NOT NULL\n" +
                 ");";
-        var stat = conn.createStatement();
-        stat.executeUpdate(creatingDB);
-        stat.close();
-        conn.close();
 
-        conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
-        stat = conn.createStatement();
+        try{
+            var username = cfgFile.params.get("username");
+            var password = cfgFile.params.get("password");
+            var conn = DriverManager.getConnection("jdbc:postgresql:postgres", username, password);
+            var stat = conn.createStatement();
+            stat.executeUpdate(creatingDB);
+            stat.close();
+            conn.close();
 
-        stat.executeUpdate(createPoS);
-        stat.executeUpdate(createAH);
-        stat.executeUpdate(createEngWords);
-        stat.executeUpdate(createUkrWords);
-        stat.executeUpdate(createTranslations);
-        stat.executeUpdate(createDictionary);
-        stat.executeUpdate(createEngRegex);
-        stat.executeUpdate(createUkrRegex);
+            conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
+            stat = conn.createStatement();
+
+            stat.executeUpdate(createPoS);
+            stat.executeUpdate(createAH);
+            stat.executeUpdate(createEngWords);
+            stat.executeUpdate(createUkrWords);
+            stat.executeUpdate(createTranslations);
+            stat.executeUpdate(createDictionary);
+            stat.executeUpdate(createEngRegex);
+            stat.executeUpdate(createUkrRegex);
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
     }
 
-    public Connection getConn(){
-        Connection conn = null;
+    public Statement getStatement(){
+        if(this.conn == null)
+            initConn();
+        try {
+            return conn.createStatement();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private void initConn(){
         try{
             Class.forName("org.postgresql.Driver").getConstructor().newInstance();
-            conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
+            var username = cfgFile.params.get("username");
+            var password = cfgFile.params.get("password");
+            this.conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
         }catch (org.postgresql.util.PSQLException e){
-            //TODO винести цю хуйню в окремий метод
-            System.err.println("Wrong username or password. Please input correct username and password");
-            var cfg = new File(cfgFilePath);
-            cfg.delete();
-        }
-        catch (SQLException e){
-            try {
+            if(e.getMessage() == "ResultSet not positioned properly, perhaps you need to call next."){
+                System.err.println("Wrong username or password. Please input correct username and password");
+                cfgFile.readDBConnectParams();
+                cfgFile.saveFile();
+                initConn();
+            }
+            else throw new RuntimeException(e);
+        }catch (SQLException e){
                 initDB();
-                conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
-            }catch (SQLException sqlException){throw new RuntimeException(sqlException);}
+                initConn();
         }catch (ReflectiveOperationException e){throw new RuntimeException(e);}
-        return conn;
     }
+
+    public void close(){
+        try {
+            this.conn.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

@@ -25,11 +25,12 @@ public class Translation {
         this.last_training = last_training;
     }
 
-    public static ArrayList<Translation> loadTranslations(Statement stat) throws SQLException{
-        return loadTranslations(stat, "");
+    public static ArrayList<Translation> loadTranslations() throws SQLException{
+        return loadTranslations("");
     }
 
-    public static ArrayList<Translation> loadTranslations(Statement stat, String condition) throws SQLException{
+    public static ArrayList<Translation> loadTranslations(String condition) throws SQLException{
+        var stat = Program.dictionary.getStatement();
         var res = new ArrayList<Translation>();
         ResultSet queryRes = null;
         String query = "SELECT ukr_id, eng_id, score, last_training FROM translation" + (condition.length() == 0 ? "" : " WHERE " + condition) + " ORDER BY score ASC;";
@@ -38,8 +39,8 @@ public class Translation {
         }catch (SQLException e){
             throw new RuntimeException("SQL exception was occurred. Query: " + query, e);
         }
-        HashMap<Integer, Word> ukrWords = Common.loadWordMap(stat.getConnection().createStatement(), WordTables.ukr_words), //TODO їба висрав stat.getConnection().createStatement()
-                               engWords = Common.loadWordMap(stat.getConnection().createStatement(), WordTables.eng_words);
+        HashMap<Integer, Word> ukrWords = Common.loadWordMap(WordTables.ukr_words),
+                               engWords = Common.loadWordMap(WordTables.eng_words);
         while(queryRes.next()){
             int ukr_id = queryRes.getInt("ukr_id");
             int eng_id = queryRes.getInt("eng_id");
@@ -50,6 +51,7 @@ public class Translation {
             res.add(new Translation(ukr_id, eng_id, ukrWord, engWord, score, last_training));
         }
         queryRes.close();
+        stat.close();
         return res;
     }
 
@@ -74,10 +76,12 @@ public class Translation {
                 today.get(Calendar.DAY_OF_MONTH) + "-" + (today.get(Calendar.MONTH)+1) + "-" + today.get(Calendar.YEAR));
     }
 
-    public static int getMinScore(Statement stat) throws SQLException{
+    public static int getMinScore() throws SQLException{
+        var stat = Program.dictionary.getStatement();
         var sql = "SELECT min(score) FROM translation";
         var qRes = stat.executeQuery(sql);
         qRes.next();
+        stat.close();
         return qRes.getInt(1);
     }
 

@@ -34,11 +34,12 @@ public class ActivityHistory {
     public void increaseDailyScore(int increasing, Statement stat)throws SQLException{
         if(increasing < 0)throw new IllegalArgumentException();
         dailyScore += increasing;
-        saveDailyScore(stat);
+        saveDailyScore();
         history.put(today, dailyScore);
     }
 
-    public void saveDailyScore(Statement stat) throws SQLException{
+    public void saveDailyScore() throws SQLException{
+        var stat = Program.dictionary.getStatement();
         String sql;
         if(newNotation) {
             sql = String.format("INSERT INTO activity_history (score) VALUES (%d);", dailyScore);
@@ -49,6 +50,7 @@ public class ActivityHistory {
             sql = String.format("UPDATE activity_history SET score = %d WHERE day = '%d-%d-%d';", dailyScore, 1900 + today.getYear(), today.getMonth() + 1, today.getDate());
             stat.executeUpdate(sql);
         }
+        stat.close();
     }
 
     public String toString() {

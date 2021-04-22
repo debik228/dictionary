@@ -1,6 +1,7 @@
 package Dictionary.Menus;
 
 import Dictionary.Common;
+import Dictionary.Program;
 import Dictionary.Tables.RegexTables;
 import Dictionary.Tables.WordTables;
 import Dictionary.Update.Update;
@@ -15,7 +16,7 @@ import static Dictionary.Tables.RegexTables.*;
 
 public enum UpdateDictionaryMenu implements AbstractMenu {
     AddWords{
-        public boolean action(Statement stat) throws Exception{
+        public boolean action() throws Exception{
             var in = new Scanner(System.in, StandardCharsets.UTF_8);
             var str = "";
             System.out.println("write translations in next format:\nбаняк, кастрюля = pot, pan\nPrint exit to leave");
@@ -29,7 +30,7 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                     for(int i = 0; i < ukr.length; i++) ukr[i] = ukr[i].replaceAll("'", "''");//TODO: зробити таку заміну у всіх запитах до бд
                     for(int i = 0; i < eng.length; i++) eng[i] = eng[i].replaceAll("'", "''");
 
-                    Update.addWords(stat, ukr, eng);
+                    Update.addWords(ukr, eng);
                 }
             }
             return false;
@@ -37,9 +38,10 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
         public String toString() { return "Add Words"; }
     },
     DefinePoS {
-        public boolean action(Statement stat)throws SQLException {
-            var ukrWordList = Common.loadWordList(stat, ukr_words, "pos = 'Unknown' ORDER BY last_upd DESC");
-            var engWordList = Common.loadWordList(stat, eng_words, "pos = 'Unknown' ORDER BY last_upd DESC");
+        public boolean action()throws SQLException {
+            var stat = Program.dictionary.getStatement();
+            var ukrWordList = Common.loadWordList(ukr_words, "pos = 'Unknown' ORDER BY last_upd DESC");
+            var engWordList = Common.loadWordList(eng_words, "pos = 'Unknown' ORDER BY last_upd DESC");
             System.out.format("There is %d words with undefined PoS in ukr_words and %d in eng_words.\nWhich table you want first?\n1. ukr_words\n2. eng_words\n", ukrWordList.size(), engWordList.size());
             var response = new Scanner(System.in).nextLine();
             if(response.charAt(0) == '1') {
@@ -50,12 +52,13 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                 Update.definePoS(stat, engWordList);
                 Update.definePoS(stat, ukrWordList);
             }
+            stat.close();
             return false;
         }
         public String toString() { return "Define part of speech"; }
     },
     AddRegex{
-        public boolean action(Statement stat)throws SQLException {
+        public boolean action()throws SQLException {
             WordTables loadingWordTable = null;
             RegexTables loadingRegexTable = null;
             String answer;
@@ -73,8 +76,8 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                 }
                 else System.out.println("Unknown answer");
             }while(loadingWordTable == null);
-            var words = Common.loadWordMap(stat, loadingWordTable);
-            var regexes = Common.loadRegexTable(stat, loadingRegexTable);
+            var words = Common.loadWordMap(loadingWordTable);
+            var regexes = Common.loadRegexTable(loadingRegexTable);
             System.out.println("For which word do you want to define regex. Type back to return");
             for(var id:words.keySet())
                 System.out.println(id + ". " + words.get(id).word);
@@ -99,7 +102,7 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                             System.out.println("Print a regex for " + words.get(id).word);
                         var newRegex = in.nextLine();
                         regexes.put(id, newRegex);
-                        Update.defineRegex(stat, id, newRegex);
+                        Update.defineRegex(id, newRegex);
                     }catch (NullPointerException e){ System.out.println("There is no word with such id. Please input correct number."); }
                 }
                 System.out.println("Print a number of word for which you want to add a regex. Type back to return");
@@ -108,7 +111,7 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
         public String toString() {return "Add regex";}
     },
     Back{
-        public boolean action(Statement stat){ return true;}
+        public boolean action(){ return true;}
         public String toString() { return "Back"; }
     };
 }

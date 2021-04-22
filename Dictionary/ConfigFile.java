@@ -2,6 +2,7 @@ package Dictionary;
 
 import java.io.*;
 import java.security.InvalidParameterException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -40,14 +41,16 @@ public class ConfigFile{
     /**
      * @throws IOException - when executing with windows cmd line, ad saving txt file. System.out.println(userTxt.exists()) System.out.println(userTxt.canRead()) System.out.println(userTxt.canWrite()) returns true.
      */
-    public void saveFile()throws IOException{
-        BufferedWriter out = null;
-        var cfgFile = new File(pathname);
-        cfgFile.createNewFile();
-        out = new BufferedWriter(new FileWriter(pathname));
-        for (var pair : params.entrySet())
-            out.write(pair.getKey() + " = " + pair.getValue() + "\n");
-        out.close();
+    public void saveFile(){
+        try {
+            BufferedWriter out = null;
+            var cfgFile = new File(pathname);
+            cfgFile.createNewFile();
+            out = new BufferedWriter(new FileWriter(pathname));
+            for (var pair : params.entrySet())
+                out.write(pair.getKey() + " = " + pair.getValue() + "\n");
+            out.close();
+        }catch (IOException e){throw new RuntimeException(e);}
     }
 
     public static String getParam(String pathname, String param) throws IOException{

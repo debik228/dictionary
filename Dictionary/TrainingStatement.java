@@ -34,8 +34,7 @@ public class TrainingStatement {
     }
 
     public List<Translation> start()throws SQLException, IOException{
-        var conn = Program.dictionary.getConn();
-        var stmt = conn.createStatement();             //TODO зробити в database метод, що повертав би statement і позабирати нахуй подібну хуйню звідусіль
+        var stmt = Program.dictionary.getStatement();
 
         Translation currTrans = null;
         var nextTour = new LinkedList<Translation>();
@@ -43,7 +42,7 @@ public class TrainingStatement {
             currTrans = translations.get(0);
             askForTranslation(currTrans);
             HashSet<String> response = getResponse();
-            List<Translation> translationVariants = Translation.loadTranslations(stmt,
+            List<Translation> translationVariants = Translation.loadTranslations(
                     (translatingFrom == WordTables.ukr_words ?"ukr_id = ":"eng_id = ") + currTrans.getWordId(translatingFrom));
 
             var checkingResult = checkResponse(response, translationVariants, translatingFrom);

@@ -2,6 +2,7 @@ package Dictionary.Menus;
 
 import Dictionary.Auxiliary.RandomDistributor;
 import Dictionary.Entities.Translation;
+import Dictionary.Program;
 import Dictionary.TrainingStatement;
 
 import java.sql.Statement;
@@ -15,12 +16,12 @@ import static Dictionary.Program.history;
 
 public enum MainMenuSelections implements AbstractMenu{
     StartTraining{
-        public boolean action(Statement stat) throws Exception{
+        public boolean action() throws Exception{
             List<Translation>
                     ukrToEng = new LinkedList<>(),
                     engToUkr = new LinkedList<>();
             var dist = new RandomDistributor(0.3, new Random());
-            dist.distribute(Translation.loadTranslations(stat, "score <= (SELECT avg(score) FROM dictionary)"), ukrToEng, engToUkr);
+            dist.distribute(Translation.loadTranslations("score <= (SELECT avg(score) FROM dictionary)"), ukrToEng, engToUkr);
 
             var engToUkrStat = new TrainingStatement(Hard, engToUkr, eng_words);
             engToUkr = engToUkrStat.start();
@@ -42,21 +43,22 @@ public enum MainMenuSelections implements AbstractMenu{
                 ukrToEng = ukrToEngStat.start();
             }
 
-            history.saveDailyScore(stat);
+            history.saveDailyScore();
             return false;
         }
         public String toString() { return "Start training"; }
     },
     AddWords{
-        public boolean action(Statement stat) throws Exception{
-            MenuHandler.handle(UpdateDictionaryMenu.class, stat.getConnection());
+        public boolean action() throws Exception{
+            MenuHandler.handle(UpdateDictionaryMenu.class);
             return false;
         }
         public String toString() { return "Update dictionary"; }
     },
     ShowDictionary{
-        public boolean action(Statement stat) throws Exception{
+        public boolean action() throws Exception{
             var query = "SELECT * FROM dictionary ORDER BY score ASC";
+            var stat = Program.dictionary.getStatement();
             var queryRes = stat.executeQuery(query);
 
             System.out.printf("%-4s %-25s %-6s %-5s %-6s %-25s %-10s\n", "num", "word", "id", "score", "id", "word", "last trained");
@@ -72,13 +74,14 @@ public enum MainMenuSelections implements AbstractMenu{
                         queryRes.getDate(6));
                 System.out.println(print);
             }
+            stat.close();
             return false;
         }
         public String toString() { return "Show your dictionary"; }
     },
     Quit{
-        public boolean action(Statement stat) throws Exception{
-            stat.getConnection().close();
+        public boolean action() throws Exception{
+            Program.dictionary.close();
             return true;
         }
         public String toString() { return "Quit"; }

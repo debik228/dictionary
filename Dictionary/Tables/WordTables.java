@@ -15,6 +15,9 @@ public enum WordTables {
         public RegexTables getAppropriateRegexTable() {
             return RegexTables.ukr_regex;
         }
+        public Tables getTablesConstant() {
+            return Tables.ukr_words;
+        }
     },
     eng_words {
         public WordTables getOpposite() {
@@ -26,10 +29,14 @@ public enum WordTables {
         public RegexTables getAppropriateRegexTable() {
             return RegexTables.eng_regex;
         }
+        public Tables getTablesConstant() {
+            return Tables.eng_words;
+        }
 
     };
 
     public abstract WordTables getOpposite();
     public abstract Class<? extends Word> getAppropriateClass();
     public abstract RegexTables getAppropriateRegexTable();
+    public abstract Tables getTablesConstant();
 }

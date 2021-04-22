@@ -2,11 +2,9 @@ package Dictionary.Menus;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.sql.Connection;
 
 public class MenuHandler {
-    public static void handle(Class<? extends AbstractMenu> menu, Connection conn)throws Exception{
-        var stat = conn.createStatement();
+    public static void handle(Class<? extends AbstractMenu> menu)throws Exception{
         var in = new BufferedReader(new InputStreamReader(System.in));
         boolean moveBack = false;
         do {
@@ -20,7 +18,7 @@ public class MenuHandler {
             if(response.length() > 0){
                 int selection = -49 + response.charAt(0);
                 if (selection > -1 && selection < menuSelections.length)
-                    moveBack = menuSelections[selection].action(stat);
+                    moveBack = menuSelections[selection].action();
             }
         } while (!moveBack);
     }
