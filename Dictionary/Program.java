@@ -16,7 +16,7 @@ public class Program {
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         try {
             var user = new ConfigFile(CFG_PATH);
-            dictionary = new Database("dictionary", user);
+            dictionary = new Database(args[0], user);
             var stat = dictionary.getStatement();
 
             Translation.updScoresToDate(stat);

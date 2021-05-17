@@ -47,8 +47,9 @@ public class Common {
         var stat = Program.dictionary.getStatement();
         var query = String.format("SELECT * FROM %s WHERE %s", table, condition);
         var queryRes = stat.executeQuery(query);
+        boolean hasNext = queryRes.next();
         stat.close();
-        return queryRes.next();
+        return hasNext;
     }
 
     public static int getSuitableWordId(WordTables table, String word)throws SQLException{

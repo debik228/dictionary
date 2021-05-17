@@ -4,7 +4,6 @@ import Dictionary.Common;
 import Dictionary.Tables.WordTables;
 
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class WordInsertion extends Insertion{
     public final String[] words;

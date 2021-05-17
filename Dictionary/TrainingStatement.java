@@ -45,22 +45,25 @@ public class TrainingStatement {
             List<Translation> translationVariants = Translation.loadTranslations(
                     (translatingFrom == WordTables.ukr_words ?"ukr_id = ":"eng_id = ") + currTrans.getWordId(translatingFrom));
 
-            var checkingResult = checkResponse(response, translationVariants, translatingFrom);
-            LinkedList<Translation>  rightResponses       = checkingResult.getRightResponses();
-            LinkedList<Translation>  nonUsedTranslations  = checkingResult.getNonUsedTranslations();
+            var resultsHandler = checkResponse(response, translationVariants, translatingFrom);
+            LinkedList<Translation>  rightResponses       = resultsHandler.getRightResponses();
+            LinkedList<Translation>  nonUsedTranslations  = resultsHandler.getNonUsedTranslations();
 
-            checkingResult.addScore(stmt, difficulty.getStandardAward());
+            resultsHandler.addScore(stmt, difficulty.getStandardAward());
             translations.removeAll(rightResponses);
 
             if(rightResponses.isEmpty()){
                 translations.remove(currTrans);
                 nextTour.add(currTrans);
             }
-            checkingResult.printResults(translationVariants, translatingFrom);
+            resultsHandler.printResults(translatingFrom);
 
             translations.removeAll(nonUsedTranslations);//we've show all the variants, so shouldn't give a chance to give a right response in this tour
+            if(nonUsedTranslations.size() > 0)
+                nextTour.addAll(getNonUsedTranslationWhichScoreLessThanAvg(nonUsedTranslations));
             System.out.println();
             questionsNum++;
+            //questionsTot = translations.size();
         }
         return nextTour;
     }
@@ -100,9 +103,8 @@ public class TrainingStatement {
             if(wrong)wrongResponses.add(response);
         }
 
-        return new QuestionResults(rightResponses, wrongResponses, nonUsedTranslations, typos);
+        return new QuestionResults(translationsVariants, rightResponses, wrongResponses, nonUsedTranslations, typos);
     }
-
     public static String modifyString(Difficulty difficulty, Word checkedScope){
         var str = checkedScope.regex;//.toLowerCase();
         var res = str;//str is an original word. Please don't modify it.
@@ -150,16 +152,39 @@ public class TrainingStatement {
                 //allow any word-character duplication
                 sb.setLength(0);
                 Character prevChar = null;
-                for (var ch : res.toCharArray()) {
-                    if(prevChar != null && prevChar == ch && isLetter(ch))continue;
-                    sb.append(ch);
-                    prevChar = ch;
-                    if(isLetter(ch))
-                        sb.append('+');
+                var charArray = res.toCharArray();
+                for (int i = 0; i < charArray.length; i++) {
+                    char curr = charArray[i];
+                    if(prevChar != null && prevChar == curr && isLetter(curr))continue;//for case when duplication already exists
+                    sb.append(curr);
+                    prevChar = curr;
+                    char appending = '+';
+                    try{
+                        if(charArray[i+1] == '?' ||
+                           charArray[i+1] == '+' ||
+                           charArray[i+1] == '*') {
+                            appending = '*';
+                        }
+                    }catch (IndexOutOfBoundsException e){}
+                    if(isLetter(curr))
+                        sb.append(appending);
                 }
                 res = sb.toString();
         }
         return res;
+    }
+
+    private LinkedList<Translation> getNonUsedTranslationWhichScoreLessThanAvg(LinkedList<Translation> nonUsedTranslations)throws SQLException{
+        LinkedList<Translation> nonUsedTranslationWhichScoreLessThanAvg = new LinkedList<>();
+        var today = Calendar.getInstance();
+        int avgScore = Translation.getAvgScore();
+        for(var currNonUsedTrans: nonUsedTranslations)
+            if(currNonUsedTrans.score < avgScore)
+                if(currNonUsedTrans.last_training.get(1) != today.get(1) ||
+                   currNonUsedTrans.last_training.get(2) != today.get(2) ||
+                   currNonUsedTrans.last_training.get(5) != today.get(5))
+                nonUsedTranslationWhichScoreLessThanAvg.add(currNonUsedTrans);
+        return nonUsedTranslationWhichScoreLessThanAvg;
     }
 
     //TODO доробити методи і застосувати їх в checkResponse
@@ -179,12 +204,14 @@ public class TrainingStatement {
         private static String BLUE_TEXT = "\u001B[34m";
         private static String RESET = "\u001B[0m";
 
+        private final List<Translation> translationVariants;
         private final LinkedList<Translation> rightResponses;
         private final LinkedList<String>      wrongResponses;
         private final LinkedList<Translation> nonUsedTranslations;
         private final HashMap<String, String> typos;
 
-        public QuestionResults(LinkedList<Translation> rightResponses, LinkedList<String> wrongResponses, LinkedList<Translation> nonUsedTranslations, HashMap<String, String> typos){
+        public QuestionResults(List<Translation> translationVariants, LinkedList<Translation> rightResponses, LinkedList<String> wrongResponses, LinkedList<Translation> nonUsedTranslations, HashMap<String, String> typos){
+            this.translationVariants = translationVariants;
             this.rightResponses = rightResponses;
             this.wrongResponses = wrongResponses;
             this.nonUsedTranslations = nonUsedTranslations;
@@ -215,7 +242,7 @@ public class TrainingStatement {
             Translation.updTranslations(stmt, rightResponses);
         }
 
-        public void printResults(List<Translation> translationVariants, WordTables translatingFrom){
+        public void printResults(WordTables translatingFrom){
             var translatingTo = translatingFrom.getOpposite();
             if(rightResponses.isEmpty()){
                 printPossibleTranslations(translationVariants, translatingTo);

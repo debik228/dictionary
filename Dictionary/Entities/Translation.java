@@ -77,12 +77,18 @@ public class Translation {
     }
 
     public static int getMinScore() throws SQLException{
+        return getAggregateVal("SELECT min(score) FROM translation");
+    }
+    public static int getAvgScore() throws SQLException{
+        return getAggregateVal("SELECT avg(score) FROM translation");
+    }
+    private static int getAggregateVal(String sql)throws SQLException{
         var stat = Program.dictionary.getStatement();
-        var sql = "SELECT min(score) FROM translation";
         var qRes = stat.executeQuery(sql);
         qRes.next();
+        int res = qRes.getInt(1);
         stat.close();
-        return qRes.getInt(1);
+        return res;
     }
 
     public Word getWord(WordTables from){
