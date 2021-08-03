@@ -24,7 +24,7 @@ public class TrainingStatement {
     private final WordTables translatingFrom;
 
     private int questionsTot;
-    private int questionsNum = 1;
+    private int questionsLeft = 1;
 
     public TrainingStatement(Difficulty difficulty, List<Translation> translations, WordTables translatingFrom){
         this.difficulty = difficulty;
@@ -62,16 +62,13 @@ public class TrainingStatement {
             if(nonUsedTranslations.size() > 0)
                 nextTour.addAll(getNonUsedTranslationWhichScoreLessThanAvg(nonUsedTranslations));
             System.out.println();
-            questionsNum++;
-            //questionsTot = translations.size();
+            questionsLeft = 1 + questionsTot - translations.size();
         }
         return nextTour;
     }
-
     private void askForTranslation(Translation currTrans){
-        System.out.println("\u001B[37m" + questionsNum + "/" + questionsTot + " Як перекладаєцця " + currTrans.getWord(translatingFrom) + "\u001B[0m");
+        System.out.println("\u001B[37m" + questionsLeft + "/" + questionsTot + " Як перекладаєцця " + currTrans.getWord(translatingFrom) + "\u001B[0m");
     }
-
     private HashSet<String> getResponse(){
         var response = new HashSet<String>();
         var responseString = in.nextLine().toLowerCase();
@@ -89,14 +86,13 @@ public class TrainingStatement {
             var wrong = true;
             for(var currTransVariant : translationsVariants) {
                 WordTables translatingTo = translatingFrom.getOpposite();
-                Word checkedScope = currTransVariant.getWord(translatingTo);
-                String modified = modifyString(difficulty, checkedScope);
-                if(response.matches(modified)){
+                Word checkingWord = currTransVariant.getWord(translatingTo);
+                if(matches(response, currTransVariant.getWord(translatingTo))){
                     rightResponses.add(currTransVariant);
                     nonUsedTranslations.remove(currTransVariant);
                     wrong = false;
-                    if(difficulty != Hard && !response.matches(modifyString(Hard, checkedScope)))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
-                        typos.put(response, checkedScope.word.toLowerCase());
+                    if(difficulty != Hard && !matches(response, checkingWord))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
+                        typos.put(response, checkingWord.word.toLowerCase());
                     break;
                 }
             }
@@ -105,6 +101,19 @@ public class TrainingStatement {
 
         return new QuestionResults(translationsVariants, rightResponses, wrongResponses, nonUsedTranslations, typos);
     }
+    private boolean matches(String response, Word translationVariant){
+        var modifiersChain = difficulty.getModifiersChain();
+        var modifyingRegex = translationVariant.regex;
+        for(var modifier : modifiersChain)
+            if(modifier.getLanguageSpeciality() == null || modifier.getLanguageSpeciality() == Word.class || modifier.getLanguageSpeciality() == translationVariant.getClass())
+                if(modifier.getPoSSpeciality() == Word.PoS.Unknown || modifier.getPoSSpeciality() == translationVariant.partOfSpeech) {
+                    modifyingRegex = modifier.modify(modifyingRegex, translationVariant);
+                    if(response.matches(modifyingRegex))
+                        return true;
+                }
+        return false;
+    }
+
     public static String modifyString(Difficulty difficulty, Word checkedScope){
         var str = checkedScope.regex;//.toLowerCase();
         var res = str;//str is an original word. Please don't modify it.
@@ -112,6 +121,7 @@ public class TrainingStatement {
         String regex;
 
         res = res.replaceAll("с[ья]", "с[ья]");
+        res = res.replaceAll("[ув] ", "[ув] ");
 
         //unnecessary 'to' before verbs
         if(checkedScope.getClass() == EngWord.class && checkedScope.partOfSpeech == Word.PoS.Verb) {
@@ -180,21 +190,9 @@ public class TrainingStatement {
         int avgScore = Translation.getAvgScore();
         for(var currNonUsedTrans: nonUsedTranslations)
             if(currNonUsedTrans.score < avgScore)
-                if(currNonUsedTrans.last_training.get(1) != today.get(1) ||
-                   currNonUsedTrans.last_training.get(2) != today.get(2) ||
-                   currNonUsedTrans.last_training.get(5) != today.get(5))
+                if(!Common.sameDate(today, currNonUsedTrans.last_training))
                 nonUsedTranslationWhichScoreLessThanAvg.add(currNonUsedTrans);
         return nonUsedTranslationWhichScoreLessThanAvg;
-    }
-
-    //TODO доробити методи і застосувати їх в checkResponse
-    /**
-     * @param gained рядок, що перевіряється
-     * @param expected очікувана відповідь
-     * @return true, якщо якщо gained відрізняється від expected не більше ніж на otherCharsNumber символів і false в іншому випадку
-     */
-    public static boolean sameExceptOf(int otherCharsNumber, String gained, String expected){
-        return false;
     }
 
     private static class QuestionResults {
