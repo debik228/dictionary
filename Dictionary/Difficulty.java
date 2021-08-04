@@ -33,7 +33,8 @@ public enum Difficulty {
             new UOrV(),
             new UnnecessaryTo(),
             new AnyEndingVariantsUkrAdj(),
-            new IgnoreSomeNonWordCharacters()};
+            new IgnoreSomeNonWordCharacters(),
+            new AbbreviationSMTH()};
         }
     };
 
