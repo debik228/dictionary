@@ -21,7 +21,7 @@ public class IgnoreSomeNonWordCharacters implements RegexModifier {
     public String modify(String PreviouslyModifiedRegex, final Word checkingWord) {
         var sb = new StringBuilder();
         var res = PreviouslyModifiedRegex;
-        var regex = "[\\s.,']";
+        var regex = "[\\s.,'\\\\]";
         var words = res.split(regex + "+");
         for(var word : words){
             sb.append(word);

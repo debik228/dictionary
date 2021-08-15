@@ -40,7 +40,7 @@ public class Translation {
             throw new RuntimeException("SQL exception was occurred. Query: " + query, e);
         }
         HashMap<Integer, Word> ukrWords = Common.loadWordMap(WordTables.ukr_words),
-                               engWords = Common.loadWordMap(WordTables.eng_words);
+                engWords = Common.loadWordMap(WordTables.eng_words);
         while(queryRes.next()){
             int ukr_id = queryRes.getInt("ukr_id");
             int eng_id = queryRes.getInt("eng_id");
@@ -125,8 +125,8 @@ public class Translation {
         if(increase <= 0)
             if(!Common.isToday(ConfigFile.getParam(Program.CFG_PATH, "last_upd")))
                 ConfigFile.setParam(Program.CFG_PATH, "last_upd",
-                Common.getTodayDate());                                                                      //decreasing only in updScoresToDate
-        else             last_training = today;                                                               //increasing only while training
+                        Common.getTodayDate());                                                       //decreasing only in updScoresToDate
+            else last_training = today;                                                               //increasing only while training
     }
 
     public String toString(){

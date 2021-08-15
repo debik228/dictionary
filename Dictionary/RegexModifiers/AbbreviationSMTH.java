@@ -17,8 +17,8 @@ public class AbbreviationSMTH implements RegexModifier{
     @Override
     public String modify(String PreviouslyModifiedRegex, Word checkingWord) {
         var res = PreviouslyModifiedRegex;
-        res = res.replaceAll("something", "((something)|(AbbreviationSMTH))");
-        res = res.replaceAll("somebody", "((somebody)|(smb))");
+        res = res.replaceAll("something", "((something)|(smth))");
+        res = res.replaceAll("somebody", "((somebody)|(smb)|(sb))");
         return res;
     }
 }
