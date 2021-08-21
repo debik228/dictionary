@@ -129,6 +129,14 @@ public class Translation {
             else last_training = today;                                                               //increasing only while training
     }
 
+    public int daysPassedFromAddition(){
+        long millis1 = engWord.last_upd.getTimeInMillis();
+        long millis2 = ukrWord.last_upd.getTimeInMillis();
+        long millisAdd  = Math.max(millis1, millis2);
+        long millisCurr = Calendar.getInstance().getTimeInMillis();
+        return (int)((millisCurr - millisAdd) / (1000*60*60*24));
+    }
+
     public String toString(){
         return ukr_id + ", " + eng_id + ", " + score + ", " + last_training.get(Calendar.YEAR) + '-' + (last_training.get(Calendar.MONTH)+1) + '-' + last_training.get(Calendar.DAY_OF_MONTH);
     }

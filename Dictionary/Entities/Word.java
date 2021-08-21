@@ -1,16 +1,20 @@
 package Dictionary.Entities;
 
+import java.util.Calendar;
+
 abstract public class Word {
     public final String word;
     public int score;
     public final PoS partOfSpeech;
     public final String regex;
+    public final Calendar last_upd;
 
-    Word(String word, int score, PoS partOfSpeech, String regex){
+    Word(String word, int score, PoS partOfSpeech, String regex, Calendar last_upd){
         this.word = word;
         this.score = score;
         this.partOfSpeech = partOfSpeech;
         this.regex = regex;
+        this.last_upd = last_upd;
     }
 
     public String toString() {

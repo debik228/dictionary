@@ -9,6 +9,12 @@ public enum Difficulty {
         public int getStandardAward(){
             return 1;
         }
+        public int getMaxMultiplier(){
+            return 0;
+        }
+        public int getMinMultiplier(){
+            return 1;
+        }
         public RegexModifier[] getModifiersChain() {
             return Medium.getModifiersChain();
         }
@@ -16,6 +22,12 @@ public enum Difficulty {
     Medium{
         public int getStandardAward(){
             return 2;
+        }
+        public int getMaxMultiplier(){
+            return 2;
+        }
+        public int getMinMultiplier(){
+            return 1;
         }
         public RegexModifier[] getModifiersChain(){
             var hardModifiers = Hard.getModifiersChain();
@@ -28,6 +40,12 @@ public enum Difficulty {
         public int getStandardAward(){
             return 5;
         }
+        public int getMaxMultiplier(){
+            return 5;
+        }
+        public int getMinMultiplier(){
+            return 1;
+        }
         public RegexModifier[] getModifiersChain(){
             return new RegexModifier[]{new SoftSignOrJaAfterS(),
             new UOrV(),
@@ -39,5 +57,7 @@ public enum Difficulty {
     };
 
     public abstract int getStandardAward();
+    public abstract int getMinMultiplier();
+    public abstract int getMaxMultiplier();
     public abstract RegexModifier[] getModifiersChain();
     }

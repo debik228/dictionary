@@ -106,7 +106,7 @@ public class Common {
         return res;
     }
     private static ResultSet getResultSet(Statement stmt, WordTables table, String Condition) throws SQLException{
-        var query = "SELECT id, word, score, pos FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
+        var query = "SELECT id, word, score, pos, last_upd FROM " + table + ( (Condition == null || Condition.length()==0) ? "" : (" WHERE " + Condition) );
         return stmt.executeQuery(query);
     }
     private static Word getNextWord(ResultSet queryRes, WordTables table, HashMap<Integer, String> regexes)throws SQLException{
@@ -115,9 +115,10 @@ public class Common {
         var score = queryRes.getInt("score");
         var pos = Word.PoS.getConstant((String)queryRes.getObject("pos"));
         var regex = regexes.get(id); if(regex == null) regex = word.toLowerCase();
+        var last_upd = Calendar.getInstance(); last_upd.setTime(queryRes.getDate("last_upd"));
         try {
-            var wordConstructor = table.getAppropriateClass().getConstructor(String.class, int.class, Word.PoS.class, String.class);
-            return wordConstructor.newInstance(word, score, pos, regex);
+            var wordConstructor = table.getAppropriateClass().getConstructor(String.class, int.class, Word.PoS.class, String.class, Calendar.class);//Runtime error after changing word constructor
+            return wordConstructor.newInstance(word, score, pos, regex, last_upd);
         }catch (Exception e){throw new RuntimeException(e);}
     }
 

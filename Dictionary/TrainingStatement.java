@@ -49,7 +49,7 @@ public class TrainingStatement {
             LinkedList<Translation>  rightResponses       = resultsHandler.getRightResponses();
             LinkedList<Translation>  nonUsedTranslations  = resultsHandler.getNonUsedTranslations();
 
-            resultsHandler.addScore(stmt, difficulty.getStandardAward());
+            resultsHandler.addScore(stmt, difficulty);
             translations.removeAll(rightResponses);
 
             if(rightResponses.isEmpty()){
@@ -225,19 +225,40 @@ public class TrainingStatement {
             RED_TEXT = GREEN_TEXT = YELLOW_TEXT = BLUE_TEXT = RESET = "";
         }
 
-        public void addScore(Statement stmt, int award)throws IOException, SQLException {
+        public void addScore(Statement stmt, Difficulty difficulty)throws IOException, SQLException {
             for(var trans : rightResponses) {
-                if(!sameDate(trans.last_training, Calendar.getInstance())){
-                    trans.addScore(award);
-                    Program.history.increaseDailyScore(award, stmt);
-                }
-                else {
-                    trans.addScore(1);
-                    Program.history.increaseDailyScore(1, stmt);
-                }
+                int scoreIncreasing;
+                double multiplier = getMultiplier(trans, difficulty);
+                if(!sameDate(trans.last_training, Calendar.getInstance()))
+                    scoreIncreasing = (int)(difficulty.getStandardAward() * multiplier);
+                else
+                    scoreIncreasing = 1;
+                trans.addScore(scoreIncreasing);
+                Program.history.increaseDailyScore(scoreIncreasing, stmt);
                 trans.last_training.setTime(new Date());
+
+//                var engWord = trans.getWord(WordTables.eng_words);                                                                                                                                              //DEBUG
+//                var ukrWord = trans.getWord(WordTables.ukr_words);                                                                                                                                              //DEBUG
+//                System.out.printf("%s--%s \n(%s-%s-%s, %s-%s-%s, %d) \nscore +%d (mult = %f)\n",                                                                                                                //DEBUG
+//                        engWord, ukrWord,                                                                                                                                                                       //DEBUG
+//                        engWord.last_upd.get(5), engWord.last_upd.get(2), engWord.last_upd.get(1), ukrWord.last_upd.get(5), ukrWord.last_upd.get(2), ukrWord.last_upd.get(1), trans.daysPassedFromAddition(),   //DEBUG
+//                        scoreIncreasing, multiplier);                                                                                                                                                           //DEBUG
             }
             Translation.updTranslations(stmt, rightResponses);
+        }
+        private double getMultiplier(Translation trans, Difficulty difficulty){
+            int minDays = 30,
+                maxDays = 365;
+            int minMult = difficulty.getMinMultiplier(),
+                maxMult = difficulty.getMaxMultiplier();
+            int daysPassed = trans.daysPassedFromAddition();
+            double multiplier;
+            if(daysPassed < minDays) multiplier = minMult;
+            else if(daysPassed > maxDays) multiplier = maxMult;
+            else multiplier = difficulty.getMinMultiplier() +
+                              ((maxMult - minMult)/(double)(maxDays - minDays)) *
+                              (daysPassed - minDays);
+            return multiplier;
         }
 
         public void printResults(WordTables translatingFrom){

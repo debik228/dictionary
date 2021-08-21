@@ -56,8 +56,8 @@ public class Update {
                     newWordValue = "to " + newWordValue;
             }
             Word newWord = null;
-            if(table == WordTables.eng_words)newWord = new EngWord(newWordValue, word.score, newPoS, word.regex);
-            else                             newWord = new UkrWord(newWordValue, word.score, newPoS, word.regex);
+            if(table == WordTables.eng_words)newWord = new EngWord(newWordValue, word.score, newPoS, word.regex, word.last_upd);
+            else                             newWord = new UkrWord(newWordValue, word.score, newPoS, word.regex, word.last_upd);
             updateWord(stat.getConnection(), newWord, word);
         }
     }
