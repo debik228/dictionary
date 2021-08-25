@@ -3,9 +3,9 @@ package Dictionary.Menus;
 import Dictionary.Auxiliary.RandomDistributor;
 import Dictionary.Entities.Translation;
 import Dictionary.Program;
+import Dictionary.TableContentPrinter;
 import Dictionary.TrainingStatement;
 
-import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -56,28 +56,19 @@ public enum MainMenuSelections implements AbstractMenu{
         public String toString() { return "Update dictionary"; }
     },
     ShowDictionary{
+        private TableContentPrinter printer = new TableContentPrinter("dictionary", new TableContentPrinter.Column[]{
+                    new TableContentPrinter.Column("ukr", "word", "%-25s"),
+                    new TableContentPrinter.Column("ukr_id", "id", "%-6s"),
+                    new TableContentPrinter.Column("score", "score", "%-5s"),
+                    new TableContentPrinter.Column("eng_id", "id", "%-6s"),
+                    new TableContentPrinter.Column("translate", "word", "%-25s"),
+                    new TableContentPrinter.Column("last_training", "last trained", "%-10s")}, "ORDER BY score DESC");
         public boolean action() throws Exception{
-            var query = "SELECT * FROM dictionary ORDER BY score ASC";
-            var stat = Program.dictionary.getStatement();
-            var queryRes = stat.executeQuery(query);
-
-            System.out.printf("%-4s %-25s %-6s %-5s %-6s %-25s %-10s\n", "num", "word", "id", "score", "id", "word", "last trained");
-
-            int i = 0;
-            while (queryRes.next()) {
-                var print = String.format("%-4s %-25s %-6s %-5s %-6s %-25s %10s", ++i + ".",
-                        queryRes.getString(1),
-                        queryRes.getInt(2),
-                        queryRes.getInt(3),
-                        queryRes.getInt(4),
-                        queryRes.getString(5),
-                        queryRes.getDate(6));
-                System.out.println(print);
-            }
-            stat.close();
+            System.out.println(printer.getTableContent());
+            MenuHandler.handle(StatisticsMenu.class);
             return false;
         }
-        public String toString() { return "Show your dictionary"; }
+        public String toString() { return "Show dictionary statistics"; }
     },
     Quit{
         public boolean action() throws Exception{
