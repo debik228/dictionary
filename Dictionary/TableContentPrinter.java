@@ -1,5 +1,7 @@
 package Dictionary;
 
+import Dictionary.Tables.Tables;
+
 import java.io.BufferedReader;
 import java.sql.ResultSet;
 
@@ -9,14 +11,14 @@ public class TableContentPrinter {
     private final String flags;
     private String result;
 
-    public TableContentPrinter(String table, Column[] columns){
-        this.table = table;
+    public TableContentPrinter(Tables table, Column[] columns){
+        this.table = table.name();
         this.columns = columns;
         this.flags = "";
     }
 
-    public TableContentPrinter(String table, Column[] columns, String flags){
-        this.table = table;
+    public TableContentPrinter(Tables table, Column[] columns, String flags){
+        this.table = table.name();
         this.columns = columns;
         this.flags = flags;
     }
@@ -103,7 +105,7 @@ public class TableContentPrinter {
     }
 
     public static void main(String[] args) {
-        var test = new TableContentPrinter("dictionary", new Column[]{
+        var test = new TableContentPrinter(Tables.dictionary, new Column[]{
                 new Column("ukr", "word", "%-25s"),
                 new Column("ukr_id", "id", "%-6s"),
                 new Column("score", "score", "%-5s"),
@@ -114,7 +116,7 @@ public class TableContentPrinter {
 
         System.out.println();
 
-        test = new TableContentPrinter("activity_history", new Column[]{
+        test = new TableContentPrinter(Tables.activity_history, new Column[]{
                 new Column("score", "score", "%-6s"),
                 new Column("day", "date", "%10s")});
         System.out.println(test.getTableContent());

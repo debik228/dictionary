@@ -4,6 +4,7 @@ import Dictionary.Auxiliary.RandomDistributor;
 import Dictionary.Entities.Translation;
 import Dictionary.Program;
 import Dictionary.TableContentPrinter;
+import Dictionary.Tables.Tables;
 import Dictionary.TrainingStatement;
 
 import java.util.LinkedList;
@@ -56,7 +57,7 @@ public enum MainMenuSelections implements AbstractMenu{
         public String toString() { return "Update dictionary"; }
     },
     ShowDictionary{
-        private TableContentPrinter printer = new TableContentPrinter("dictionary", new TableContentPrinter.Column[]{
+        private TableContentPrinter printer = new TableContentPrinter(Tables.dictionary, new TableContentPrinter.Column[]{
                     new TableContentPrinter.Column("ukr", "word", "%-25s"),
                     new TableContentPrinter.Column("ukr_id", "id", "%-6s"),
                     new TableContentPrinter.Column("score", "score", "%-5s"),

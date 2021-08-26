@@ -6,6 +6,7 @@ public enum Tables {
     translation,
     ukr_regex,
     eng_regex,
-    activity_hitory,
-    dictionary;
+    activity_history,
+    dictionary,
+    addition_dates;
 }

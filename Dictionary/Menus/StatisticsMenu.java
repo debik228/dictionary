@@ -3,6 +3,7 @@ package Dictionary.Menus;
 import Dictionary.DatabaseMetadata;
 import Dictionary.PlotBuilder.Main;
 import Dictionary.TableContentPrinter;
+import Dictionary.Tables.Tables;
 
 public enum StatisticsMenu implements AbstractMenu {
     ShowStatistics{
@@ -22,9 +23,10 @@ public enum StatisticsMenu implements AbstractMenu {
         }
     },
     ShowDailyActivity{
-        private TableContentPrinter printer = new TableContentPrinter("activity_history", new TableContentPrinter.Column[]{
+        private TableContentPrinter printer = new TableContentPrinter(Tables.activity_history, new TableContentPrinter.Column[]{
                 new TableContentPrinter.Column("score", "score", "%-6s"),
-                new TableContentPrinter.Column("day", "date", "%10s")});
+                new TableContentPrinter.Column("day", "date", "%10s")},
+                "ORDER BY day");
         public boolean action() throws Exception {
             System.out.println(printer.getTableContent());
             return false;
@@ -34,7 +36,7 @@ public enum StatisticsMenu implements AbstractMenu {
         }
     },
     ShowWordAdditionByDate{
-        private TableContentPrinter printer = new TableContentPrinter("addition_dates", new TableContentPrinter.Column[]{
+        private TableContentPrinter printer = new TableContentPrinter(Tables.addition_dates, new TableContentPrinter.Column[]{
                 new TableContentPrinter.Column("addition_date", "date", "%-10s"),
                 new TableContentPrinter.Column("count(*)", "new pairs", "%10s")},
                 "GROUP BY addition_date ORDER BY addition_date");
