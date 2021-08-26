@@ -106,7 +106,7 @@ public class TrainingStatement {
         var modifyingRegex = translationVariant.regex;
         for(var modifier : modifiersChain)
             if(modifier.getLanguageSpeciality() == null || modifier.getLanguageSpeciality() == Word.class || modifier.getLanguageSpeciality() == translationVariant.getClass())
-                if(modifier.getPoSSpeciality() == Word.PoS.Unknown || modifier.getPoSSpeciality() == translationVariant.partOfSpeech) {
+                if(modifier.getPoSSpeciality() == Word.PoS.Unknown || modifier.getPoSSpeciality() == translationVariant.partOfSpeech || modifier.getPoSSpeciality() == null) {
                     modifyingRegex = modifier.modify(modifyingRegex, translationVariant);
                     if(response.matches(modifyingRegex))
                         return true;

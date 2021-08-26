@@ -47,12 +47,13 @@ public enum Difficulty {
             return 1;
         }
         public RegexModifier[] getModifiersChain(){
-            return new RegexModifier[]{new SoftSignOrJaAfterS(),
-            new UOrV(),
-            new UnnecessaryTo(),
-            new AnyEndingVariantsUkrAdj(),
-            new IgnoreSomeNonWordCharacters(),
-            new AbbreviationSMTH()};
+            return new RegexModifier[]{new EmptyModifier(),
+                                       new SoftSignOrJaAfterS(),
+                                       new UOrV(),
+                                       new UnnecessaryTo(),
+                                       new AnyEndingVariantsUkrAdj(),
+                                       new IgnoreSomeNonWordCharacters(),
+                                       new AbbreviationSMTH()};
         }
     };
 

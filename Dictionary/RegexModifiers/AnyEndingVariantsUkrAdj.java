@@ -17,8 +17,12 @@ public class AnyEndingVariantsUkrAdj implements RegexModifier {
 
     @Override
     public String modify(String PreviouslyModifiedRegex, final Word checkingWord) {
-        String[] wordParts = checkingWord.regex.split("[^A-Za-zА-Яа-яі0-9]+"),
-              nonWordParts = checkingWord.regex.split("[A-Za-zА-Яа-яі0-9]+");
+        if(hasMoreThanOneWord(checkingWord.word))   //прямий кут +
+            return checkingWord.regex;              //пряма кут  -
+                                                    //хуйня зі сплітом додана для слів з реджексами типу коротк((отривалий)|(очасний)|(ий))
+
+        String[] wordParts = checkingWord.regex.split("[^А-Яа-яі0-9]+"),
+              nonWordParts = checkingWord.regex.split("[А-Яа-яі0-9]+");
 
         for(int i = 0; i < wordParts.length; i++)
             if(isAdjective(wordParts[i]))
@@ -27,15 +31,41 @@ public class AnyEndingVariantsUkrAdj implements RegexModifier {
         String res = mergeArrays(wordParts, nonWordParts);
         return res;
     }
-    private boolean isAdjective(String str){ return str.matches(".*(ий|а|е|і)$"); }
+    private boolean hasMoreThanOneWord(String str){
+        return str.matches("[А-Яа-яі0-9]+ [А-Яа-яі0-9]+");
+    }
+
+    private boolean isAdjective(String str){
+        return str.matches(".*(ий|а|е|і)$") || str.matches(".*(ій|я|є|і)$");
+    }
 
     private String replaceEnding(String str){
-        var regex = "(ий|а|е|і)";
+        var res = "";
+        if(hasFirstTypeEnding(str))
+            res = replaceEndingType1(str);
+        else
+            res = replaceEndingType2(str);
+        return res;
+    }
+    private boolean hasFirstTypeEnding(String str){
+        return str.matches(".*(ий|а|е|і)$");
+    }
+    private String replaceEndingType1(String str){
+        var regex1 = "(ий|а|е|і)";
         if(str.endsWith("ий"))str = str.substring(0, str.lastIndexOf('и'));
         if(str.endsWith("а")) str = str.substring(0, str.lastIndexOf('а'));
         if(str.endsWith("е")) str = str.substring(0, str.lastIndexOf('е'));
         if(str.endsWith("і")) str = str.substring(0, str.lastIndexOf('і'));
-        str = str + regex;
+        str = str + regex1;
+        return str;
+    }
+    private String replaceEndingType2(String str){
+        var regex1 = "(ій|я|є|і)";
+        if(str.endsWith("ій"))str = str.substring(0, str.lastIndexOf('і'));
+        if(str.endsWith("я")) str = str.substring(0, str.lastIndexOf('я'));
+        if(str.endsWith("є")) str = str.substring(0, str.lastIndexOf('є'));
+        if(str.endsWith("і")) str = str.substring(0, str.lastIndexOf('і'));
+        str = str + regex1;
         return str;
     }
 
