@@ -33,7 +33,7 @@ public class Update {
     public static <T extends Word> void updateWord(Connection conn, T newWord, T oldWord)throws SQLException{
         var stat = conn.createStatement();
         var sql = String.format("UPDATE %s SET word='%s', score=%s, pos='%s' WHERE word='%s'",
-                (newWord instanceof EngWord)?"eng_words":"ukr_words", newWord.word.replaceAll("'", "''"), newWord.score, newWord.partOfSpeech.name(), oldWord.word);
+                (newWord instanceof EngWord)?"eng_words":"ukr_words", newWord.word.replaceAll("'", "''"), newWord.score, newWord.partOfSpeech.name(), oldWord.word.replaceAll("'", "''"));
         stat.executeUpdate(sql);
         stat.close();
     }
