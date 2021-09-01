@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
+import java.util.regex.PatternSyntaxException;
 
 import static Dictionary.Tables.WordTables.*;
 import static Dictionary.Tables.RegexTables.*;
@@ -58,6 +59,8 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
         public String toString() { return "Define part of speech"; }
     },
     AddRegex{
+        private String errorMessage;
+
         public boolean action()throws SQLException {
             WordTables loadingWordTable = null;
             RegexTables loadingRegexTable = null;
@@ -101,12 +104,25 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                         else
                             System.out.println("Print a regex for " + words.get(id).word);
                         var newRegex = in.nextLine();
-                        regexes.put(id, newRegex);
-                        Update.defineRegex(id, newRegex);
+                        if(validateRegex(newRegex)) {
+                            regexes.put(id, newRegex);
+                            Update.defineRegex(id, newRegex);
+                        }
+                        else
+                            System.out.println(errorMessage);
                     }catch (NullPointerException e){ System.out.println("There is no word with such id. Please input correct number."); }
                 }
                 System.out.println("Print a number of word for which you want to add a regex. Type back to return");
             }while(true);
+        }
+        private boolean validateRegex(String regex){
+            try{
+                "".matches(regex);
+                return true;
+            }catch (PatternSyntaxException e){
+                errorMessage = "Regex " + e.getPattern() + " is invalid.\n" + e.getDescription() + " at index " + e.getIndex();
+                return false;
+            }
         }
         public String toString() {return "Add regex";}
     },
