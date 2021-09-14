@@ -91,7 +91,7 @@ public class TrainingStatement {
                     rightResponses.add(currTransVariant);
                     nonUsedTranslations.remove(currTransVariant);
                     wrong = false;
-                    if(difficulty != Hard && !matches(response, checkingWord))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
+                    if(difficulty != Hard && !matches(response, checkingWord, Hard))//In fact hard difficulty, don't allow mistakes, but allows typos. So mistake list always empty in this level.
                         typos.put(response, checkingWord.word.toLowerCase());
                     break;
                 }
@@ -102,6 +102,9 @@ public class TrainingStatement {
         return new QuestionResults(translationsVariants, rightResponses, wrongResponses, nonUsedTranslations, typos);
     }
     private boolean matches(String response, Word translationVariant){
+        return matches(response, translationVariant, difficulty);
+    }
+    private boolean matches(String response, Word translationVariant, Difficulty difficulty){
         var modifiersChain = difficulty.getModifiersChain();
         var modifyingRegex = translationVariant.regex;
         for(var modifier : modifiersChain)

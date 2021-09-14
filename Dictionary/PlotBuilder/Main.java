@@ -33,6 +33,7 @@ public class Main extends Frame{
         String currentTimestamp = getCurrentTimestamp();
         Kostyl = "plot_" + currentTimestamp + ".png";
         var imgFile = new File(path + "/" + Kostyl);
+        imgFile.createNewFile();
         var imgSors = new DictionaryPlotImageProducer().img;
 
         var image = createImage(imgSors);

@@ -24,24 +24,22 @@ public class TableContentPrinter {
     }
 
     public String getTableContent(){
-        if(result == null){
-            var sb = new StringBuilder();
-            var formatFlags = mergeFormatFlags();
-            sb.append(String.format(formatFlags, mergeDisplayingNames()));
-            try{
-                var query = "SELECT " + getFieldsNames() + " FROM " + table + " " + flags;
-                var stat = new Database("dictionary", new ConfigFile(Dictionary.Program.CFG_PATH)).getStatement();
-                var queryRes = stat.executeQuery(query);
+        var sb = new StringBuilder();
+        var formatFlags = mergeFormatFlags();
+        sb.append(String.format(formatFlags, mergeDisplayingNames()));
+        try{
+            var query = "SELECT " + getFieldsNames() + " FROM " + table + " " + flags;
+            var stat = new Database("dictionary", new ConfigFile(Dictionary.Program.CFG_PATH)).getStatement();
+            var queryRes = stat.executeQuery(query);
 
-                int i = 0;
-                while (queryRes.next()) {
-                    var print = getTupleString(queryRes, ++i);
-                    sb.append(print);
-                }
-                stat.close();
-            }catch (Exception e){throw new RuntimeException(e);}
-            result = sb.toString();
-        }
+            int i = 0;
+            while (queryRes.next()) {
+                var print = getTupleString(queryRes, ++i);
+                sb.append(print);
+            }
+            stat.close();
+        }catch (Exception e){throw new RuntimeException(e);}
+        result = sb.toString();
         return result;
     }
 
