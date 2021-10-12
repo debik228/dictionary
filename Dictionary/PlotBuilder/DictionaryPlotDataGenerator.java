@@ -1,27 +1,15 @@
 package Dictionary.PlotBuilder;
 
+import Dictionary.Program;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DictionaryPlotDataGenerator {
-    public static final String dbName = "dictionary";
-    public static final String username = "postgres";
-    public static final String password = "123456789";
-    public static Connection conn;
-
     private static Statement getStat(){
-        Statement stat = null;
-        try {
-            if(conn == null) {
-                    conn = DriverManager.getConnection("jdbc:postgresql:" + dbName, username, password);
-            }
-            stat = conn.createStatement();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-            System.exit(1488);
-        }
+        Statement stat = Program.dictionary.getStatement();
         return stat;
     }
     private static int getAggregateScoreFuncResult(String funcName){

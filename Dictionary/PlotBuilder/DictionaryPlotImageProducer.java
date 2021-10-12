@@ -4,9 +4,9 @@ import java.awt.image.MemoryImageSource;
 
 public class DictionaryPlotImageProducer{
     public final MemoryImageSource img;
-    private final int h = DictionaryPlotDataGenerator.getMaxScore();
     private final int w = DictionaryPlotDataGenerator.getMaxCountOfTuplesWithSameScore();
     private int[] data = DictionaryPlotDataGenerator.getScoreDistribution();
+    private final int h = data.length;
 
 
     public DictionaryPlotImageProducer() {

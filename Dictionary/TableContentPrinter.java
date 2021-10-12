@@ -29,7 +29,8 @@ public class TableContentPrinter {
         sb.append(String.format(formatFlags, mergeDisplayingNames()));
         try{
             var query = "SELECT " + getFieldsNames() + " FROM " + table + " " + flags;
-            var stat = new Database("dictionary", new ConfigFile(Dictionary.Program.CFG_PATH)).getStatement();
+            //var stat = new Database("dictionary", new ConfigFile(Dictionary.Program.CFG_PATH)).getStatement();
+            var stat = Program.dictionary.getStatement();
             var queryRes = stat.executeQuery(query);
 
             int i = 0;
@@ -100,23 +101,5 @@ public class TableContentPrinter {
         public String getFormatInfo() {
             return formatInfo;
         }
-    }
-
-    public static void main(String[] args) {
-        var test = new TableContentPrinter(Tables.dictionary, new Column[]{
-                new Column("ukr", "word", "%-25s"),
-                new Column("ukr_id", "id", "%-6s"),
-                new Column("score", "score", "%-5s"),
-                new Column("eng_id", "id", "%-6s"),
-                new Column("translate", "word", "%-25s"),
-                new Column("last_training", "last trained", "%-10s")}, "ORDER BY score DESC");
-        System.out.println(test.getTableContent());
-
-        System.out.println();
-
-        test = new TableContentPrinter(Tables.activity_history, new Column[]{
-                new Column("score", "score", "%-6s"),
-                new Column("day", "date", "%10s")});
-        System.out.println(test.getTableContent());
     }
 }
