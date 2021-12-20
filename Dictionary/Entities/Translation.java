@@ -15,14 +15,16 @@ public class Translation {
     private final EngWord engWord;
     public int score;
     public Calendar last_training;
+    private Integer[] successfulTryings;
 
-    private Translation(int ukr_id, int eng_id, UkrWord ukrWord, EngWord engWord, int score, Calendar last_training){
+    private Translation(int ukr_id, int eng_id, UkrWord ukrWord, EngWord engWord, int score, Calendar last_training, Integer[] successfulTryings){
         this.ukr_id = ukr_id;
         this.eng_id = eng_id;
         this.ukrWord = ukrWord;
         this.engWord = engWord;
         this.score = score;
         this.last_training = last_training;
+        this.successfulTryings = successfulTryings;
     }
 
     public static ArrayList<Translation> loadTranslations() throws SQLException{
@@ -33,7 +35,7 @@ public class Translation {
         var stat = Program.dictionary.getStatement();
         var res = new ArrayList<Translation>();
         ResultSet queryRes = null;
-        String query = "SELECT ukr_id, eng_id, score, last_training FROM translation" + (condition.length() == 0 ? "" : " WHERE " + condition) + " ORDER BY score ASC;";
+        String query = "SELECT ukr_id, eng_id, score, last_training, successful_tryings FROM translation" + (condition.length() == 0 ? "" : " WHERE " + condition) + " ORDER BY score ASC;";
         try {
             queryRes = stat.executeQuery(query);
         }catch (SQLException e){
@@ -48,7 +50,8 @@ public class Translation {
             Calendar last_training = Calendar.getInstance(); last_training.setTime(queryRes.getDate("last_training"));
             var ukrWord = (UkrWord)ukrWords.get(ukr_id);
             var engWord = (EngWord)engWords.get(eng_id);
-            res.add(new Translation(ukr_id, eng_id, ukrWord, engWord, score, last_training));
+            var successfulTryings = (Integer[])queryRes.getArray("successful_tryings").getArray();
+            res.add(new Translation(ukr_id, eng_id, ukrWord, engWord, score, last_training, successfulTryings));
         }
         queryRes.close();
         stat.close();
@@ -58,8 +61,10 @@ public class Translation {
     public static void updTranslations(Statement stat, List<Translation> translations) throws  SQLException{
         var query = new StringBuilder("BEGIN;\n");
         for(var trans : translations){
-            var str = String.format("UPDATE translation SET score=%d, last_training='%d-%d-%d' WHERE ukr_id=%d AND eng_id=%d;\n",
-                    trans.score, trans.last_training.get(Calendar.YEAR), trans.last_training.get(Calendar.MONTH) + 1, trans.last_training.get(Calendar.DAY_OF_MONTH), trans.ukr_id, trans.eng_id);
+            var str = String.format("UPDATE translation SET score=%d, last_training='%d-%d-%d', successful_tryings = '{%d,%d,%d,%d,%d,%d,%d,%d,%d,%d}' WHERE ukr_id=%d AND eng_id=%d;\n",
+                    trans.score, trans.last_training.get(Calendar.YEAR), trans.last_training.get(Calendar.MONTH) + 1, trans.last_training.get(Calendar.DAY_OF_MONTH),
+                    trans.successfulTryings[0],trans.successfulTryings[1],trans.successfulTryings[2],trans.successfulTryings[3],trans.successfulTryings[4],trans.successfulTryings[5],trans.successfulTryings[6],trans.successfulTryings[7],trans.successfulTryings[8],trans.successfulTryings[9],
+                    trans.ukr_id, trans.eng_id);
             query.append(str);
         }
         query.append("COMMIT;");
@@ -135,6 +140,16 @@ public class Translation {
         long millisAdd  = Math.max(millis1, millis2);
         long millisCurr = Calendar.getInstance().getTimeInMillis();
         return (int)((millisCurr - millisAdd) / (1000*60*60*24));
+    }
+
+    public void insertSuccessfulTrying(int succTry){
+        shiftSuccessfulTryingsRight();
+        successfulTryings[0] = succTry;
+    }
+    private void shiftSuccessfulTryingsRight(){
+        for(int i = 9; i > 0; i--)
+            successfulTryings[i] = successfulTryings[i-1];
+
     }
 
     public String toString(){

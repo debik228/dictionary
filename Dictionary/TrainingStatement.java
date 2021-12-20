@@ -19,6 +19,7 @@ import static java.lang.Character.isLetter;
 public class TrainingStatement {
     private static final Scanner in = new Scanner(System.in, StandardCharsets.UTF_8);
 
+    private final int round;
     private final Difficulty difficulty;
     private final List<Translation> translations;
     private final WordTables translatingFrom;
@@ -26,11 +27,19 @@ public class TrainingStatement {
     private int questionsTot;
     private int questionsLeft = 1;
 
+    public TrainingStatement(Difficulty difficulty, List<Translation> translations, WordTables translatingFrom, int round){
+        this.difficulty = difficulty;
+        this.translations = translations;
+        this.translatingFrom = translatingFrom;
+        this.questionsTot = translations.size();
+        this.round = round;
+    }
     public TrainingStatement(Difficulty difficulty, List<Translation> translations, WordTables translatingFrom){
         this.difficulty = difficulty;
         this.translations = translations;
         this.translatingFrom = translatingFrom;
         this.questionsTot = translations.size();
+        this.round = 0;
     }
 
     public List<Translation> start()throws SQLException, IOException{
@@ -49,6 +58,7 @@ public class TrainingStatement {
             LinkedList<Translation>  rightResponses       = resultsHandler.getRightResponses();
             LinkedList<Translation>  nonUsedTranslations  = resultsHandler.getNonUsedTranslations();
 
+            resultsHandler.updateSuccTryingsArray(round);
             resultsHandler.addScore(stmt, difficulty);
             translations.removeAll(rightResponses);
 
@@ -228,6 +238,11 @@ public class TrainingStatement {
             RED_TEXT = GREEN_TEXT = YELLOW_TEXT = BLUE_TEXT = RESET = "";
         }
 
+        public void updateSuccTryingsArray(int round) {
+            for (var rightResp : rightResponses)
+                if (!Common.sameDate(Calendar.getInstance(), rightResp.last_training))
+                    rightResp.insertSuccessfulTrying(round);
+        }
         public void addScore(Statement stmt, Difficulty difficulty)throws IOException, SQLException {
             for(var trans : rightResponses) {
                 int scoreIncreasing;
@@ -239,13 +254,6 @@ public class TrainingStatement {
                 trans.addScore(scoreIncreasing);
                 Program.history.increaseDailyScore(scoreIncreasing, stmt);
                 trans.last_training.setTime(new Date());
-
-//                var engWord = trans.getWord(WordTables.eng_words);                                                                                                                                              //DEBUG
-//                var ukrWord = trans.getWord(WordTables.ukr_words);                                                                                                                                              //DEBUG
-//                System.out.printf("%s--%s \n(%s-%s-%s, %s-%s-%s, %d) \nscore +%d (mult = %f)\n",                                                                                                                //DEBUG
-//                        engWord, ukrWord,                                                                                                                                                                       //DEBUG
-//                        engWord.last_upd.get(5), engWord.last_upd.get(2), engWord.last_upd.get(1), ukrWord.last_upd.get(5), ukrWord.last_upd.get(2), ukrWord.last_upd.get(1), trans.daysPassedFromAddition(),   //DEBUG
-//                        scoreIncreasing, multiplier);                                                                                                                                                           //DEBUG
             }
             Translation.updTranslations(stmt, rightResponses);
         }

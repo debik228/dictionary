@@ -24,23 +24,24 @@ public enum MainMenuSelections implements AbstractMenu{
             var dist = new RandomDistributor(0.3, new Random());
             dist.distribute(Translation.loadTranslations("score <= (SELECT avg(score) FROM dictionary)"), ukrToEng, engToUkr);
 
-            var engToUkrStat = new TrainingStatement(Hard, engToUkr, eng_words);
+            var engToUkrStat = new TrainingStatement(Hard, engToUkr, eng_words,1);
             engToUkr = engToUkrStat.start();
 
-            var ukrToEngStat = new TrainingStatement(Hard, ukrToEng, ukr_words);
+            var ukrToEngStat = new TrainingStatement(Hard, ukrToEng, ukr_words,1);
             ukrToEng = ukrToEngStat.start();
 
-            engToUkrStat = new TrainingStatement(Medium, engToUkr, eng_words);
+            engToUkrStat = new TrainingStatement(Medium, engToUkr, eng_words,2);
             engToUkr = engToUkrStat.start();
 
-            ukrToEngStat = new TrainingStatement(Medium, ukrToEng, ukr_words);
+            ukrToEngStat = new TrainingStatement(Medium, ukrToEng, ukr_words,2);
             ukrToEng = ukrToEngStat.start();
 
+            int round = 3;
             while(ukrToEng.size() != 0 || engToUkr.size() != 0){
-                engToUkrStat = new TrainingStatement(Easy, engToUkr, eng_words);
+                engToUkrStat = new TrainingStatement(Easy, engToUkr, eng_words, ++round);
                 engToUkr = engToUkrStat.start();
 
-                ukrToEngStat = new TrainingStatement(Easy, ukrToEng, ukr_words);
+                ukrToEngStat = new TrainingStatement(Easy, ukrToEng, ukr_words, round);
                 ukrToEng = ukrToEngStat.start();
             }
 
