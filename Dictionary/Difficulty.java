@@ -41,7 +41,7 @@ public enum Difficulty {
             return 5;
         }
         public int getMaxMultiplier(){
-            return 5;
+            return 2;
         }
         public int getMinMultiplier(){
             return 1;

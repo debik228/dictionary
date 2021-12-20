@@ -152,6 +152,20 @@ public class Translation {
 
     }
 
+    public double getSuccTryingsCoefficient(){
+        double sum = 0.0, factorsSum = 0.0;
+        for(int i = 0;i < successfulTryings.length; i++){
+            double factor = (1 - i*0.1);
+            int currArrayElement = successfulTryings[i];
+
+            if(successfulTryings[i] == 0) break;
+
+            sum+= factor*currArrayElement;
+            factorsSum += factor;
+        }
+        return sum/factorsSum;
+    }
+
     public String toString(){
         return ukr_id + ", " + eng_id + ", " + score + ", " + last_training.get(Calendar.YEAR) + '-' + (last_training.get(Calendar.MONTH)+1) + '-' + last_training.get(Calendar.DAY_OF_MONTH);
     }

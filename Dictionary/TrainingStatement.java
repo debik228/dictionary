@@ -244,7 +244,7 @@ public class TrainingStatement {
         public void addScore(Statement stmt, Difficulty difficulty)throws IOException, SQLException {
             for(var trans : rightResponses) {
                 int scoreIncreasing;
-                double multiplier = getMultiplier(trans, difficulty);
+                double multiplier = getAdditionDateMultiplier(trans, difficulty) * getSuccessfullyTryingsMultiplier(trans);
                 if(!sameDate(trans.last_training, Calendar.getInstance()))
                     scoreIncreasing = (int)(difficulty.getStandardAward() * multiplier);
                 else
@@ -255,7 +255,7 @@ public class TrainingStatement {
             }
             Translation.updTranslations(stmt, rightResponses);
         }
-        private double getMultiplier(Translation trans, Difficulty difficulty){
+        private double getAdditionDateMultiplier(Translation trans, Difficulty difficulty){
             int minDays = 30,
                 maxDays = 365;
             int minMult = difficulty.getMinMultiplier(),
@@ -268,6 +268,10 @@ public class TrainingStatement {
                               ((maxMult - minMult)/(double)(maxDays - minDays)) *
                               (daysPassed - minDays);
             return multiplier;
+        }
+        private double getSuccessfullyTryingsMultiplier(Translation trans){
+            double maxMultiplier = 3.0;
+            return maxMultiplier/trans.getSuccTryingsCoefficient();
         }
 
         public void printResults(WordTables translatingFrom){
