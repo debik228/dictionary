@@ -62,10 +62,8 @@ public class TrainingStatement {
             resultsHandler.addScore(stmt, difficulty);
             translations.removeAll(rightResponses);
 
-            if(rightResponses.isEmpty()){
+            if(rightResponses.isEmpty())
                 translations.remove(currTrans);
-                nextTour.add(currTrans);
-            }
             resultsHandler.printResults(translatingFrom);
 
             translations.removeAll(nonUsedTranslations);//we've show all the variants, so shouldn't give a chance to give a right response in this tour
