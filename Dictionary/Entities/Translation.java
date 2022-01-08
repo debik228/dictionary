@@ -166,6 +166,14 @@ public class Translation {
         return sum/factorsSum;
     }
 
+    public int getTryingsCount() {
+        int i = 0;
+        for(;i < this.successfulTryings.length; i++)
+            if(successfulTryings[i] == 0)
+                break;
+        return i;
+    }
+
     public String toString(){
         return ukr_id + ", " + eng_id + ", " + score + ", " + last_training.get(Calendar.YEAR) + '-' + (last_training.get(Calendar.MONTH)+1) + '-' + last_training.get(Calendar.DAY_OF_MONTH);
     }

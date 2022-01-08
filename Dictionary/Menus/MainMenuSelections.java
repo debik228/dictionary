@@ -64,7 +64,8 @@ public enum MainMenuSelections implements AbstractMenu{
                     new TableContentPrinter.Column("score", "score", "%-5s"),
                     new TableContentPrinter.Column("eng_id", "id", "%-6s"),
                     new TableContentPrinter.Column("translate", "word", "%-25s"),
-                    new TableContentPrinter.Column("last_training", "last trained", "%-10s")}, "ORDER BY score DESC");
+                    new TableContentPrinter.Column("last_training", "last trained", "%-10s"),
+                    new TableContentPrinter.Column("successful_tryings", "successfully tryings", "%25s")}, "ORDER BY score DESC");
         public boolean action() throws Exception{
             System.out.println(printer.getTableContent());
             MenuHandler.handle(StatisticsMenu.class);

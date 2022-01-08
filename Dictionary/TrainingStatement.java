@@ -270,8 +270,11 @@ public class TrainingStatement {
             return multiplier;
         }
         private double getSuccessfullyTryingsMultiplier(Translation trans){
-            double maxMultiplier = 3.0;
-            return maxMultiplier/trans.getSuccTryingsCoefficient();
+            double maxMultiplier = 5.0;
+            double multiplier = 1.0;
+            if(trans.getTryingsCount() > 5)
+                multiplier = maxMultiplier/trans.getSuccTryingsCoefficient();
+            return multiplier;
         }
 
         public void printResults(WordTables translatingFrom){
