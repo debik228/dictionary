@@ -104,7 +104,7 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                         else
                             System.out.println("Print a regex for " + words.get(id).word);
                         var newRegex = in.nextLine();
-                        if(validateRegex(newRegex)) {
+                        if(validateRegex(newRegex, words.get(id).word)) {
                             regexes.put(id, newRegex);
                             Update.defineRegex(id, newRegex);
                         }
@@ -115,14 +115,18 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                 System.out.println("Print a number of word for which you want to add a regex. Type back to return");
             }while(true);
         }
-        private boolean validateRegex(String regex){
+        private boolean validateRegex(String regex, String word){
             try{
                 "".matches(regex);
-                return true;
             }catch (PatternSyntaxException e){
                 errorMessage = "Regex " + e.getPattern() + " is invalid.\n" + e.getDescription() + " at index " + e.getIndex();
                 return false;
             }
+            if(!word.matches(regex)){
+                errorMessage = "Regex " + regex + " don't matches to original word " + word;
+                return false;
+            }
+            return true;
         }
         public String toString() {return "Add regex";}
     },
