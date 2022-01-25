@@ -1,6 +1,7 @@
 package Dictionary.Menus;
 
 import Dictionary.Common;
+import Dictionary.Dialog.BooleanDialog;
 import Dictionary.Program;
 import Dictionary.Tables.RegexTables;
 import Dictionary.Tables.WordTables;
@@ -123,8 +124,10 @@ public enum UpdateDictionaryMenu implements AbstractMenu {
                 return false;
             }
             if(!word.matches(regex)){
-                errorMessage = "Regex " + regex + " don't matches to original word " + word;
-                return false;
+                errorMessage = "";
+                System.out.println("Regex " + regex + " don't matches to original word " + word);
+                var q = new BooleanDialog("Do you wish to continue, and insert regex in DB");
+                return q.getResult();
             }
             return true;
         }

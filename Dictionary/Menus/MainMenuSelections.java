@@ -1,15 +1,14 @@
 package Dictionary.Menus;
 
 import Dictionary.Auxiliary.RandomDistributor;
+import Dictionary.Dialog.FloatDialog;
 import Dictionary.Entities.Translation;
 import Dictionary.Program;
 import Dictionary.TableContentPrinter;
 import Dictionary.Tables.Tables;
 import Dictionary.TrainingStatement;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static Dictionary.Tables.WordTables.*;
 import static Dictionary.Difficulty.*;
@@ -22,7 +21,11 @@ public enum MainMenuSelections implements AbstractMenu{
                     ukrToEng = new LinkedList<>(),
                     engToUkr = new LinkedList<>();
             var dist = new RandomDistributor(0.3, new Random());
-            dist.distribute(Translation.loadTranslations("score <= (SELECT avg(score) FROM dictionary)"), ukrToEng, engToUkr);
+            var q = new FloatDialog("Which load quotient do you want?");
+            var loadQuotient = q.getResult();
+            Locale.setDefault(Locale.US);
+            var query = String.format("score <= %f*(SELECT avg(score) FROM dictionary)", loadQuotient);
+            dist.distribute(Translation.loadTranslations(query), ukrToEng, engToUkr);
 
             var engToUkrStat = new TrainingStatement(Hard, engToUkr, eng_words,1);
             engToUkr = engToUkrStat.start();
